@@ -12,20 +12,20 @@
 <meta name="apple-mobile-web-app-title" content="Diamonds">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Diamonds — Juego casual de combinar diamantes</title>
-<meta name="description" content="Juego casual de combinar diamantes: intercambia gemas, alinea 3 o más del mismo color, encadena combos y supera tu récord. Funciona sin conexión." />
+<meta name="description" content="Juego casual de combinar diamantes: mapa de mundos y niveles procedurales, dificultad creciente, diamantes duros y poderes especiales. Funciona sin conexión." />
 <link rel="canonical" href="https://diamonds.closer.click/" />
 <meta property="og:type" content="website" />
 <meta property="og:locale" content="es_ES" />
 <meta property="og:site_name" content="Closer Click" />
 <meta property="og:title" content="Diamonds" />
-<meta property="og:description" content="Juego casual de combinar diamantes: alinea 3 o más, encadena combos y supera tu récord." />
+<meta property="og:description" content="Combina diamantes por mundos y niveles procedurales: diamantes duros, poderes especiales y combos." />
 <meta property="og:url" content="https://diamonds.closer.click/" />
 <meta property="og:image" content="https://diamonds.closer.click/og.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Diamonds" />
-<meta name="twitter:description" content="Juego casual de combinar diamantes: alinea 3 o más, encadena combos y supera tu récord." />
+<meta name="twitter:description" content="Combina diamantes por mundos y niveles procedurales: diamantes duros, poderes especiales y combos." />
 <meta name="twitter:image" content="https://diamonds.closer.click/og.jpg" />
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -82,12 +82,83 @@
   .topbar button:active { color: #e2e8f0; }
   .topbar-coin { flex: 0 0 auto; display: flex; align-items: center; padding: 0 10px; }
 
-  /* --- Marcador --- */
+  /* --- Vistas --- */
+  .vista { flex: 1 1 auto; min-height: 0; display: none; flex-direction: column; }
+  .vista.activa { display: flex; }
+
+  /* --- Mapa de mundos --- */
+  #vistaMapa { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .mapa-intro {
+    text-align: center;
+    padding: 2.2vh 6vw 1vh;
+  }
+  .mapa-intro h1 {
+    font-size: clamp(22px, 4vh, 34px);
+    font-weight: 800;
+    background: linear-gradient(90deg, #a5f3fc, #22d3ee);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .mapa-intro p { color: #94a3b8; font-size: clamp(12px, 1.9vh, 15px); margin-top: 4px; }
+  #mapaMundos { padding: 0 4vw 4vh; }
+  .mundo {
+    --tint: #22d3ee;
+    margin: 1.6vh auto;
+    max-width: 560px;
+    border-radius: 18px;
+    padding: 16px 14px 22px;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--tint) 16%, transparent), rgba(148,163,184,.04));
+    border: 1px solid color-mix(in srgb, var(--tint) 35%, rgba(148,163,184,.15));
+  }
+  .mundo-head { text-align: center; margin-bottom: 14px; }
+  .mundo-num {
+    display: inline-block;
+    font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--tint);
+  }
+  .mundo-nombre { display: block; font-size: clamp(18px, 2.8vh, 24px); font-weight: 800; color: #f1f5f9; }
+  .mundo-feat { display: block; font-size: clamp(11px, 1.7vh, 14px); color: #94a3b8; margin-top: 2px; }
+  .sendero {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px 18px;
+  }
+  /* Serpenteo: desplaza filas para dar sensación de camino */
+  .nivel-nodo {
+    position: relative;
+    width: clamp(56px, 16vw, 72px);
+    height: clamp(56px, 16vw, 72px);
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--tint) 60%, #fff 0%);
+    background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--tint) 45%, #0b1220), #0b1220);
+    color: #e2e8f0;
+    cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .nivel-nodo:nth-child(4n+2) { transform: translateY(10px); }
+  .nivel-nodo:nth-child(4n+3) { transform: translateY(16px); }
+  .nivel-nodo:nth-child(4n+4) { transform: translateY(10px); }
+  .nivel-nodo:active { transform: scale(.94); }
+  .nivel-nodo .nn { font-size: clamp(17px, 4.4vw, 22px); font-weight: 800; line-height: 1; }
+  .nivel-nodo .ne { font-size: clamp(8px, 2.4vw, 11px); letter-spacing: -1px; color: #fcd34d; }
+  .nivel-nodo.bloq {
+    border-color: rgba(148,163,184,.28);
+    background: rgba(148,163,184,.08);
+    color: #64748b; cursor: default;
+  }
+  .nivel-nodo.actual {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--tint) 60%, transparent), 0 0 20px color-mix(in srgb, var(--tint) 50%, transparent);
+  }
+
+  /* --- HUD de juego --- */
   .scores {
     flex: 0 0 auto;
     display: flex;
     gap: 2vw;
-    padding: 1.4vh 4vw .4vh;
+    padding: 1.2vh 3vw .3vh;
   }
   .score {
     flex: 1;
@@ -95,23 +166,27 @@
     background: rgba(148,163,184,.07);
     border: 1px solid rgba(148,163,184,.12);
     border-radius: 14px;
-    padding: 1vh .5vh;
+    padding: .9vh .4vh;
+    min-width: 0;
   }
   .score .lbl {
-    font-size: clamp(10px, 1.5vh, 13px);
+    font-size: clamp(9px, 1.35vh, 12px);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: .12em;
+    letter-spacing: .1em;
     color: #64748b;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .score .val {
-    font-size: clamp(22px, 4.4vh, 38px);
+    font-size: clamp(18px, 3.6vh, 30px);
     font-weight: 800;
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
     color: #f1f5f9;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .score.best .val { color: #fcd34d; }
+  .score.obj .val { font-size: clamp(14px, 2.6vh, 22px); }
+  .score.obj .val.romper { color: #fcd34d; }
 
   /* --- Tablero --- */
   .board-wrap {
@@ -120,7 +195,7 @@
     align-items: center;
     justify-content: center;
     min-height: 0;
-    padding: 1.2vh 3vw;
+    padding: 1vh 3vw;
   }
   #board {
     display: block;
@@ -135,7 +210,7 @@
   /* --- Combo flotante --- */
   .combo {
     position: fixed;
-    left: 50%; top: 42%;
+    left: 50%; top: 44%;
     transform: translate(-50%,-50%) scale(.6);
     font-size: clamp(28px, 9vw, 64px);
     font-weight: 900;
@@ -170,7 +245,7 @@
     color: #e2e8f0;
     font-size: clamp(13px, 2vh, 17px);
     font-weight: 700;
-    padding: 1.6vh 0;
+    padding: 1.4vh 0;
     text-transform: uppercase;
     letter-spacing: .05em;
     cursor: pointer;
@@ -206,17 +281,19 @@
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
   .modal-caja p { color: #94a3b8; font-size: clamp(13px, 2vh, 16px); line-height: 1.5; }
-  .modal-caja .big {
-    font-size: clamp(34px, 7vh, 54px);
-    font-weight: 900; color: #fcd34d; margin: 12px 0 4px;
-    font-variant-numeric: tabular-nums;
-  }
+  .estrellas { font-size: clamp(30px, 7vh, 46px); margin: 10px 0 4px; letter-spacing: 4px; }
+  .estrellas .on { color: #fcd34d; text-shadow: 0 2px 12px rgba(252,211,77,.5); }
+  .estrellas .off { color: #334155; }
+  .modal-botones { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
   .modal-caja button {
-    margin-top: 20px; width: 100%;
+    width: 100%;
     border: none; border-radius: 14px;
     background: linear-gradient(90deg, #0891b2, #06b6d4);
     color: #06121b; font-size: clamp(15px, 2.4vh, 19px); font-weight: 800;
-    padding: 14px 0; cursor: pointer; text-transform: uppercase; letter-spacing: .05em;
+    padding: 13px 0; cursor: pointer; text-transform: uppercase; letter-spacing: .05em;
+  }
+  .modal-caja button.sec {
+    background: rgba(148,163,184,.14); color: #e2e8f0;
   }
   .modal-caja button:active { filter: brightness(1.1); }
 </style>
@@ -229,7 +306,7 @@
   "@type": "WebApplication",
   "name": "Diamonds",
   "url": "https://diamonds.closer.click/",
-  "description": "Juego casual de combinar diamantes: alinea 3 o más del mismo color, encadena combos y supera tu récord.",
+  "description": "Juego casual de combinar diamantes con mapa de mundos y niveles procedurales, diamantes duros y poderes especiales.",
   "applicationCategory": "GameApplication",
   "operatingSystem": "Web",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
@@ -244,59 +321,78 @@
       <img src="icon.svg" alt="" width="30" height="30">
       <span>Diamonds</span>
     </div>
+    <button id="btnMapaTop" style="display:none">← Mapa</button>
     <button id="btnInstalar" style="display:none">⬇ Instalar</button>
     <closer-click-support class="topbar-coin" href="https://ko-fi.com/closerclick" repo="closerclick/diamonds" discord="https://discord.gg/D648uq7cth"></closer-click-support>
   </div>
 
-  <div class="scores">
-    <div class="score">
-      <div class="lbl">Puntos</div>
-      <div class="val" id="score">0</div>
+  <!-- ============ VISTA MAPA ============ -->
+  <div class="vista activa" id="vistaMapa">
+    <div class="mapa-intro">
+      <h1>Mapa de mundos</h1>
+      <p>Cada mundo añade una mecánica nueva. ¡Combina, rompe y supera cada nivel!</p>
     </div>
-    <div class="score">
-      <div class="lbl">Movimientos</div>
-      <div class="val" id="moves">30</div>
-    </div>
-    <div class="score best">
-      <div class="lbl">Récord</div>
-      <div class="val" id="best">0</div>
-    </div>
+    <div id="mapaMundos"></div>
   </div>
 
-  <div class="board-wrap">
-    <canvas id="board"></canvas>
+  <!-- ============ VISTA JUEGO ============ -->
+  <div class="vista" id="vistaJuego">
+    <div class="scores">
+      <div class="score">
+        <div class="lbl">Nivel</div>
+        <div class="val" id="hudNivel">1·1</div>
+      </div>
+      <div class="score obj">
+        <div class="lbl" id="objLbl">Objetivo</div>
+        <div class="val" id="objVal">—</div>
+      </div>
+      <div class="score">
+        <div class="lbl">Mov.</div>
+        <div class="val" id="moves">30</div>
+      </div>
+      <div class="score">
+        <div class="lbl">Puntos</div>
+        <div class="val" id="score">0</div>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <canvas id="board"></canvas>
+    </div>
+
+    <div class="control">
+      <button id="btnMapa2">← Mapa</button>
+      <button class="primary" id="btnRevolver">⤮ Rebarajar</button>
+    </div>
   </div>
 
   <div class="combo" id="combo"></div>
 
-  <div class="control">
-    <button id="btnNuevo">↺ Nuevo</button>
-    <button class="primary" id="btnRevolver">⤮ Rebarajar</button>
-  </div>
-
   <div class="modal" id="modalFin">
     <div class="modal-caja">
-      <h2>¡Fin de la partida!</h2>
-      <p>Tu puntuación</p>
-      <div class="big" id="finScore">0</div>
+      <h2 id="finTitulo">¡Nivel superado!</h2>
+      <div class="estrellas" id="finEstrellas"></div>
       <p id="finMsg"></p>
-      <button id="btnJugar">Jugar de nuevo</button>
+      <div class="modal-botones">
+        <button id="btnSiguiente">Siguiente nivel</button>
+        <button id="btnReintentar">Reintentar</button>
+        <button class="sec" id="btnMapaModal">Ir al mapa</button>
+      </div>
     </div>
   </div>
 
 <script>
   const $ = id => document.getElementById(id);
 
-  // --- Configuración del juego ---
+  /* ===================== Configuración ===================== */
   const N = 8;                 // tablero N×N
-  const TIPOS = 6;             // colores de gema
-  const MOVS_INI = 30;         // movimientos por partida
-  const PT_GEMA = 10;          // puntos por gema eliminada
-  const BEST_KEY = 'diamonds_best';
+  const PT_GEMA = 12;          // puntos por gema eliminada
+  const NIVELES_POR_MUNDO = 8;
+  const PROG_KEY = 'diamonds_prog';
 
-  // Paleta de gemas (color claro arriba, oscuro abajo => aspecto de gema)
+  // Paleta de gemas (claro arriba, oscuro abajo => aspecto de diamante)
   const COLORES = [
-    ['#fda4af', '#e11d48'], // rosa/rojo
+    ['#fda4af', '#e11d48'], // rojo
     ['#fdba74', '#ea580c'], // naranja
     ['#fde047', '#ca8a04'], // amarillo
     ['#86efac', '#16a34a'], // verde
@@ -304,25 +400,86 @@
     ['#d8b4fe', '#9333ea']  // violeta
   ];
 
-  // --- Estado ---
+  // Mundos: cada uno añade una mecánica. Más allá del último se repite "Caos"
+  // y la dificultad sigue escalando por fórmula.
+  const MUNDOS = [
+    { nombre: 'Cristal',  tint: '#22d3ee', feat: 'Combina y crea poderes' },
+    { nombre: 'Escarcha', tint: '#7dd3fc', feat: 'Diamantes duros (2 golpes)' },
+    { nombre: 'Prisma',   tint: '#d8b4fe', feat: 'Un color más' },
+    { nombre: 'Roca',     tint: '#a8a29e', feat: 'Diamantes reforzados (3 golpes)' },
+    { nombre: 'Tormenta', tint: '#fbbf24', feat: 'Menos movimientos, más objetivos' },
+    { nombre: 'Caos',     tint: '#fb7185', feat: 'Todo combinado' },
+  ];
+  const mundoDeNivel = n => Math.floor((n - 1) / NIVELES_POR_MUNDO) + 1;
+  const nivelEnMundo = n => ((n - 1) % NIVELES_POR_MUNDO) + 1;
+  const infoMundo = w => MUNDOS[Math.min(w - 1, MUNDOS.length - 1)];
+
+  // Mecánicas desbloqueadas por mundo (incremental).
+  function features(w) {
+    return {
+      colores: w >= 3 ? 6 : 5,   // Prisma añade el 6º color
+      duros: w >= 2,             // Escarcha: diamantes de 2 golpes
+      reforzados: w >= 4,        // Roca: pueden ser de 3 golpes
+    };
+  }
+
+  // RNG determinista (mulberry32): cada nivel se genera igual siempre.
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // Definición determinista del nivel n (1-based global).
+  function defNivel(n) {
+    const w = mundoDeNivel(n), em = nivelEnMundo(n);
+    const f = features(w);
+    const rng = mulberry32((Math.imul(n, 2654435761) ^ 0x9e3779b9) >>> 0);
+    const tipo = (f.duros && em % 2 === 0) ? 'romper' : 'puntos';
+    const movs = Math.max(14, 30 - (w - 1) * 2 - Math.floor((em - 1) / 2));
+    let duros = 0;
+    if (f.duros) {
+      duros = tipo === 'romper' ? (3 + w + Math.floor(em / 2)) : Math.floor(rng() * 3);
+      duros = Math.min(duros, 18);
+    }
+    const objetivoPuntos = tipo === 'puntos'
+      ? Math.round((600 + w * 320 + em * 200) / 10) * 10
+      : 0;
+    return { n, w, em, tipo, movs, colores: f.colores, duros, reforzados: f.reforzados,
+             objetivoPuntos, rng, info: infoMundo(w) };
+  }
+
+  /* ===================== Estado ===================== */
   const cv = $('board');
   const ctx = cv.getContext('2d');
-  let cell = 48;              // tamaño de celda en px (se recalcula al medir)
-  let dpr = 1;
+  let cell = 48, dpr = 1;
+  let grid = [];
+  let estado = 'idle';         // 'idle' | 'busy'
+  let sel = null;
+  let score = 0, movs = 0, objRestante = 0;
+  let def = defNivel(1);
+  let vista = 'mapa';
+  let tweens = [];
 
-  let grid = [];             // grid[r][c] = { tipo, dr, dc, scale }  (dr/dc: pos de dibujo animada)
-  let estado = 'idle';       // 'idle' | 'busy'
-  let sel = null;            // {r,c} gema seleccionada
-  let score = 0, movs = MOVS_INI;
-  let best = Number(localStorage.getItem(BEST_KEY) || 0);
-  let tweens = [];           // animaciones activas
+  let prog = cargarProg();
+  function cargarProg() {
+    try { const d = JSON.parse(localStorage.getItem(PROG_KEY)); if (d && d.stars) return { max: d.max || 1, stars: d.stars || {} }; } catch {}
+    return { max: 1, stars: {} };
+  }
+  function guardarProg() { localStorage.setItem(PROG_KEY, JSON.stringify(prog)); }
 
-  // --- Tweens (animación por interpolación) ---
+  // Fábrica de gemas
+  function gem(r, c, t) { return { tipo: t, hp: 1, hpMax: 1, power: null, objetivo: false, objColor: null, dr: r, dc: c, scale: 1 }; }
+  const I = (r, c) => r * N + c;
+  const at = i => grid[(i / N) | 0][i % N];
+
+  /* ===================== Tweens ===================== */
   function tween(obj, props, dur, ease) {
     const from = {}; for (const k in props) from[k] = obj[k];
-    return new Promise(res => {
-      tweens.push({ obj, props, from, dur, t: 0, ease: ease || easeOutQuad, done: res });
-    });
+    return new Promise(res => tweens.push({ obj, props, from, dur, t: 0, ease: ease || easeOutQuad, done: res }));
   }
   function easeOutQuad(t) { return 1 - (1 - t) * (1 - t); }
   function easeInQuad(t) { return t * t; }
@@ -335,20 +492,20 @@
     for (let i = tweens.length - 1; i >= 0; i--) {
       const tw = tweens[i];
       tw.t += dt;
-      let k = Math.min(1, tw.t / tw.dur);
-      const e = tw.ease(k);
+      const k = Math.min(1, tw.t / tw.dur), e = tw.ease(k);
       for (const p in tw.props) tw.obj[p] = tw.from[p] + (tw.props[p] - tw.from[p]) * e;
       if (k >= 1) { tweens.splice(i, 1); tw.done(); }
     }
-    dibujar();
+    if (vista === 'juego') dibujar();
     requestAnimationFrame(loop);
   }
 
-  // --- Dimensionado responsivo ---
+  /* ===================== Dimensionado ===================== */
   function medir() {
     const wrap = cv.parentElement;
     const rect = wrap.getBoundingClientRect();
     const lado = Math.floor(Math.min(rect.width, rect.height));
+    if (lado <= 0) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cv.style.width = lado + 'px';
     cv.style.height = lado + 'px';
@@ -357,155 +514,401 @@
     cell = (lado * dpr) / N;
   }
 
-  // --- Dibujo ---
+  /* ===================== Dibujo ===================== */
   function dibujar() {
     ctx.clearRect(0, 0, cv.width, cv.height);
-    // tablero (cuadrícula sutil)
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-      if ((r + c) % 2 === 0) {
-        ctx.fillStyle = 'rgba(148,163,184,.04)';
-        ctx.fillRect(c * cell, r * cell, cell, cell);
-      }
+      if ((r + c) % 2 === 0) { ctx.fillStyle = 'rgba(148,163,184,.04)'; ctx.fillRect(c * cell, r * cell, cell, cell); }
     }
-    // gemas
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
       const g = grid[r][c];
-      if (!g || g.tipo < 0) continue;
-      dibujarGema(g.dc, g.dr, g.tipo, g.scale, sel && sel.r === r && sel.c === c);
+      if (g && g.tipo >= 0) dibujarGema(g, sel && sel.r === r && sel.c === c);
     }
   }
 
-  function dibujarGema(dc, dr, tipo, scale, seleccionada) {
-    const cx = (dc + 0.5) * cell;
-    const cy = (dr + 0.5) * cell;
-    const half = cell * 0.40 * scale;     // semidiagonal del rombo
-    const [c1, c2] = COLORES[tipo];
+  function rombo(cx, cy, half) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - half); ctx.lineTo(cx + half, cy);
+    ctx.lineTo(cx, cy + half); ctx.lineTo(cx - half, cy);
+    ctx.closePath();
+  }
+
+  function dibujarGema(g, seleccionada) {
+    const cx = (g.dc + 0.5) * cell, cy = (g.dr + 0.5) * cell;
+    const half = cell * 0.40 * g.scale;
+    const esEstrella = g.power === 'estrella';
 
     if (seleccionada) {
-      ctx.save();
       ctx.fillStyle = 'rgba(255,255,255,.10)';
-      ctx.beginPath();
-      ctx.arc(cx, cy, cell * 0.46, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      ctx.beginPath(); ctx.arc(cx, cy, cell * 0.46, 0, Math.PI * 2); ctx.fill();
     }
 
-    // rombo (diamante) con degradado vertical
+    // Base de piedra para diamantes duros
+    if (g.hpMax > 1) {
+      const tono = g.hpMax >= 3 ? '#57534e' : '#78716c';
+      ctx.fillStyle = tono;
+      const s = cell * 0.46 * g.scale;
+      const rr = cell * 0.12;
+      roundRect(cx - s, cy - s, s * 2, s * 2, rr); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.3)'; ctx.lineWidth = Math.max(1, cell * 0.02);
+      roundRect(cx - s, cy - s, s * 2, s * 2, rr); ctx.stroke();
+    }
+
+    const [c1, c2] = esEstrella ? ['#f8fafc', '#cbd5e1'] : COLORES[g.tipo];
     const grad = ctx.createLinearGradient(cx, cy - half, cx, cy + half);
-    grad.addColorStop(0, c1);
-    grad.addColorStop(1, c2);
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - half);
-    ctx.lineTo(cx + half, cy);
-    ctx.lineTo(cx, cy + half);
-    ctx.lineTo(cx - half, cy);
-    ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
+    grad.addColorStop(0, c1); grad.addColorStop(1, c2);
+    rombo(cx, cy, half); ctx.fillStyle = grad; ctx.fill();
 
-    // faceta central (línea de brillo)
+    // Facetas
+    rombo(cx, cy, half * 0.55); ctx.fillStyle = 'rgba(255,255,255,.16)'; ctx.fill();
     ctx.beginPath();
-    ctx.moveTo(cx, cy - half);
-    ctx.lineTo(cx + half * 0.5, cy);
-    ctx.lineTo(cx, cy + half);
-    ctx.lineTo(cx - half * 0.5, cy);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,.16)';
-    ctx.fill();
+    ctx.moveTo(cx, cy - half); ctx.lineTo(cx + half * 0.35, cy - half * 0.32); ctx.lineTo(cx - half * 0.35, cy - half * 0.32);
+    ctx.closePath(); ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fill();
 
-    // destello superior
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - half);
-    ctx.lineTo(cx + half * 0.35, cy - half * 0.32);
-    ctx.lineTo(cx - half * 0.35, cy - half * 0.32);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,.45)';
-    ctx.fill();
+    // Borde
+    ctx.lineWidth = Math.max(1, cell * 0.02); ctx.strokeStyle = 'rgba(0,0,0,.18)';
+    rombo(cx, cy, half); ctx.stroke();
 
-    // borde
-    ctx.lineWidth = Math.max(1, cell * 0.02);
-    ctx.strokeStyle = 'rgba(0,0,0,.18)';
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - half);
-    ctx.lineTo(cx + half, cy);
-    ctx.lineTo(cx, cy + half);
-    ctx.lineTo(cx - half, cy);
-    ctx.closePath();
-    ctx.stroke();
+    // Grietas si está dañado
+    if (g.hpMax > 1 && g.hp < g.hpMax) {
+      ctx.strokeStyle = 'rgba(15,23,42,.65)'; ctx.lineWidth = Math.max(1, cell * 0.03);
+      ctx.beginPath();
+      ctx.moveTo(cx - half * 0.5, cy - half * 0.2); ctx.lineTo(cx, cy + half * 0.1); ctx.lineTo(cx + half * 0.45, cy - half * 0.35);
+      if (g.hp <= g.hpMax - 2) { ctx.moveTo(cx - half * 0.1, cy + half * 0.5); ctx.lineTo(cx + half * 0.2, cy - half * 0.05); }
+      ctx.stroke();
+    }
+
+    // Poderes
+    if (g.power === 'lineH' || g.power === 'lineV') {
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      const w = half * 0.85, t = half * 0.16;
+      ctx.save(); ctx.translate(cx, cy); if (g.power === 'lineV') ctx.rotate(Math.PI / 2);
+      ctx.fillRect(-w, -t * 1.6, w * 2, t); ctx.fillRect(-w, t * 0.6, w * 2, t);
+      ctx.restore();
+    } else if (g.power === 'bomba') {
+      ctx.fillStyle = 'rgba(2,6,15,.55)';
+      ctx.beginPath(); ctx.arc(cx, cy, half * 0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fde68a'; ctx.lineWidth = Math.max(1.5, cell * 0.035);
+      ctx.beginPath(); ctx.arc(cx, cy, half * 0.5, 0, Math.PI * 2); ctx.stroke();
+    } else if (esEstrella) {
+      estrella4(cx, cy, half * 0.75, half * 0.28);
+    }
+
+    // Pips de HP (diamantes duros)
+    if (g.hpMax > 1) {
+      const px = cx + half * 0.62, py = cy - half * 0.62, r = Math.max(1.5, cell * 0.035);
+      for (let k = 0; k < g.hp; k++) {
+        ctx.fillStyle = '#fde68a';
+        ctx.beginPath(); ctx.arc(px - k * r * 2.6, py, r, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    // Anillo de objetivo
+    if (g.objetivo) {
+      ctx.strokeStyle = 'rgba(252,211,77,.9)'; ctx.lineWidth = Math.max(1.5, cell * 0.03);
+      ctx.setLineDash([cell * 0.12, cell * 0.08]);
+      ctx.beginPath(); ctx.arc(cx, cy, half * 1.05, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
 
-  // --- Lógica del tablero ---
-  function nuevaGema(r, c, tipo) {
-    return { tipo, dr: r, dc: c, scale: 1 };
+  function estrella4(cx, cy, R, r) {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const ang = (Math.PI / 4) * i - Math.PI / 2;
+      const rad = i % 2 === 0 ? R : r;
+      const x = cx + Math.cos(ang) * rad, y = cy + Math.sin(ang) * rad;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath(); ctx.fill();
   }
-  function tipoRandom() { return Math.floor(Math.random() * TIPOS); }
 
-  // Genera un tablero sin combinaciones iniciales y con al menos un movimiento.
-  function generar() {
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  /* ===================== Generación ===================== */
+  function generarNivel() {
+    const C = def.colores, rng = def.rng;
     do {
       grid = [];
       for (let r = 0; r < N; r++) {
         const fila = [];
         for (let c = 0; c < N; c++) {
           let t;
-          do { t = tipoRandom(); }
-          while (
-            (c >= 2 && fila[c-1].tipo === t && fila[c-2].tipo === t) ||
-            (r >= 2 && grid[r-1][c].tipo === t && grid[r-2][c].tipo === t)
-          );
-          fila.push(nuevaGema(r, c, t));
+          do { t = (rng() * C) | 0; }
+          while ((c >= 2 && fila[c - 1].tipo === t && fila[c - 2].tipo === t) ||
+                 (r >= 2 && grid[r - 1][c].tipo === t && grid[r - 2][c].tipo === t));
+          fila.push(gem(r, c, t));
         }
         grid.push(fila);
       }
-    } while (!hayMovimientos());
-  }
+    } while (tieneMatches() || !hayMovimientos());
 
-  // Devuelve el conjunto de celdas que forman parte de alguna línea de 3+.
-  function encontrarMatches() {
-    const marcadas = new Set();
-    // horizontales
-    for (let r = 0; r < N; r++) {
-      let run = 1;
-      for (let c = 1; c <= N; c++) {
-        const igual = c < N && grid[r][c].tipo === grid[r][c-1].tipo && grid[r][c].tipo >= 0;
-        if (igual) { run++; }
-        else { if (run >= 3) for (let k = c - run; k < c; k++) marcadas.add(r * N + k); run = 1; }
+    // Diamantes duros
+    let n = def.duros, guard = 0;
+    while (n > 0 && guard++ < 800) {
+      const r = (rng() * N) | 0, c = (rng() * N) | 0, g = grid[r][c];
+      if (g.hpMax === 1 && !g.power) {
+        const hp = def.reforzados && rng() < 0.45 ? 3 : 2;
+        g.hp = hp; g.hpMax = hp;
+        if (def.tipo === 'romper') g.objetivo = true;
+        n--;
       }
     }
-    // verticales
-    for (let c = 0; c < N; c++) {
-      let run = 1;
-      for (let r = 1; r <= N; r++) {
-        const igual = r < N && grid[r][c].tipo === grid[r-1][c].tipo && grid[r][c].tipo >= 0;
-        if (igual) { run++; }
-        else { if (run >= 3) for (let k = r - run; k < r; k++) marcadas.add(k * N + c); run = 1; }
-      }
-    }
-    return marcadas;
   }
 
-  // ¿Existe algún intercambio que genere una combinación?
-  function hayMovimientos() {
-    const swapTest = (r1, c1, r2, c2) => {
-      const a = grid[r1][c1].tipo, b = grid[r2][c2].tipo;
-      grid[r1][c1].tipo = b; grid[r2][c2].tipo = a;
-      const hay = encontrarMatches().size > 0;
-      grid[r1][c1].tipo = a; grid[r2][c2].tipo = b;
-      return hay;
-    };
+  function contarObjetivos() {
+    let n = 0;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (grid[r][c] && grid[r][c].objetivo) n++;
+    return n;
+  }
+
+  /* ===================== Matching ===================== */
+  function tieneMatches() {
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-      if (c < N - 1 && swapTest(r, c, r, c + 1)) return true;
-      if (r < N - 1 && swapTest(r, c, r + 1, c)) return true;
+      const g = grid[r][c]; if (!g || g.tipo < 0) continue; const t = g.tipo;
+      if (c >= 2 && grid[r][c - 1].tipo === t && grid[r][c - 2].tipo === t) return true;
+      if (r >= 2 && grid[r - 1][c].tipo === t && grid[r - 2][c].tipo === t) return true;
     }
     return false;
   }
 
-  // --- Interacción ---
+  function hayMovimientos() {
+    const test = (r1, c1, r2, c2) => {
+      const a = grid[r1][c1].tipo, b = grid[r2][c2].tipo;
+      // poderes garantizan jugada
+      if (grid[r1][c1].power || grid[r2][c2].power) return true;
+      grid[r1][c1].tipo = b; grid[r2][c2].tipo = a;
+      const hay = tieneMatches();
+      grid[r1][c1].tipo = a; grid[r2][c2].tipo = b;
+      return hay;
+    };
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (c < N - 1 && test(r, c, r, c + 1)) return true;
+      if (r < N - 1 && test(r, c, r + 1, c)) return true;
+    }
+    return false;
+  }
+
+  // Busca runs >=3 y decide creación de poderes. Devuelve {clear:Set, creations:[{idx,power}]}
+  function buscarGrupos(swap) {
+    const runsH = [], runsV = [];
+    for (let r = 0; r < N; r++) {
+      let s = 0;
+      for (let c = 1; c <= N; c++) {
+        const same = c < N && grid[r][c] && grid[r][c - 1] && grid[r][c].tipo === grid[r][c - 1].tipo && grid[r][c].tipo >= 0;
+        if (same) continue;
+        const len = c - s;
+        if (len >= 3) { const cells = []; for (let k = s; k < c; k++) cells.push(I(r, k)); runsH.push({ cells, len, dir: 'H' }); }
+        s = c;
+      }
+    }
+    for (let c = 0; c < N; c++) {
+      let s = 0;
+      for (let r = 1; r <= N; r++) {
+        const same = r < N && grid[r][c] && grid[r - 1][c] && grid[r][c].tipo === grid[r - 1][c].tipo && grid[r][c].tipo >= 0;
+        if (same) continue;
+        const len = r - s;
+        if (len >= 3) { const cells = []; for (let k = s; k < r; k++) cells.push(I(k, c)); runsV.push({ cells, len, dir: 'V' }); }
+        s = r;
+      }
+    }
+
+    const clear = new Set();
+    runsH.forEach(rn => rn.cells.forEach(i => clear.add(i)));
+    runsV.forEach(rn => rn.cells.forEach(i => clear.add(i)));
+    if (clear.size === 0) return { clear, creations: [] };
+
+    const swapIdx = new Set();
+    if (swap) { swapIdx.add(I(swap.a.r, swap.a.c)); swapIdx.add(I(swap.b.r, swap.b.c)); }
+    const pickPivot = cells => { for (const i of cells) if (swapIdx.has(i)) return i; return cells[cells.length >> 1]; };
+
+    const inH = new Set(), inV = new Set();
+    runsH.forEach(rn => rn.cells.forEach(i => inH.add(i)));
+    runsV.forEach(rn => rn.cells.forEach(i => inV.add(i)));
+
+    const creations = [], usados = new Set();
+    // Bombas: intersección de run H y run V (forma L/T/+)
+    for (const i of clear) {
+      if (inH.has(i) && inV.has(i) && !usados.has(i)) { creations.push({ idx: i, power: 'bomba' }); usados.add(i); }
+    }
+    // Estrella: run recto de 5+
+    [...runsH, ...runsV].forEach(rn => {
+      if (rn.len >= 5 && !rn.cells.some(i => usados.has(i))) {
+        const p = pickPivot(rn.cells); creations.push({ idx: p, power: 'estrella' }); usados.add(p);
+      }
+    });
+    // Línea: run recto de 4
+    [...runsH, ...runsV].forEach(rn => {
+      if (rn.len === 4 && !rn.cells.some(i => usados.has(i))) {
+        const p = pickPivot(rn.cells); creations.push({ idx: p, power: rn.dir === 'H' ? 'lineH' : 'lineV' }); usados.add(p);
+      }
+    });
+
+    creations.forEach(cr => clear.delete(cr.idx)); // los pivotes se transforman, no se eliminan
+    return { clear, creations };
+  }
+
+  // Cobertura de un poder al detonar.
+  function blast(i, g) {
+    const r = (i / N) | 0, c = i % N, out = [];
+    if (g.power === 'lineH') { for (let cc = 0; cc < N; cc++) out.push(I(r, cc)); }
+    else if (g.power === 'lineV') { for (let rr = 0; rr < N; rr++) out.push(I(rr, c)); }
+    else if (g.power === 'bomba') {
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        const rr = r + dr, cc = c + dc; if (rr >= 0 && rr < N && cc >= 0 && cc < N) out.push(I(rr, cc));
+      }
+    } else if (g.power === 'estrella') {
+      const col = g.objColor != null ? g.objColor : g.tipo;
+      for (let rr = 0; rr < N; rr++) for (let cc = 0; cc < N; cc++) { const x = grid[rr][cc]; if (x && x.tipo === col) out.push(I(rr, cc)); }
+    }
+    return out;
+  }
+
+  // Expande un conjunto inicial activando poderes en cadena.
+  function recolectarDetonacion(initial, protect) {
+    const out = new Set(), stack = [...initial], act = new Set();
+    while (stack.length) {
+      const i = stack.pop();
+      if (protect && protect.has(i)) continue;
+      const g = at(i); if (!g || g.tipo < 0) { out.add(i); continue; }
+      out.add(i);
+      if (g.power && !act.has(i)) { act.add(i); for (const b of blast(i, g)) if (!out.has(b)) stack.push(b); }
+    }
+    return out;
+  }
+
+  /* ===================== Resolución ===================== */
+  async function aplicarDetonacion(deton, combo, creations) {
+    creations.forEach(cr => { const g = at(cr.idx); if (g) { g.power = cr.power; g.hp = 1; g.hpMax = 1; } });
+    const pivotSet = new Set(creations.map(c => c.idx));
+
+    const removidos = [], danados = []; let objHit = 0;
+    deton.forEach(i => {
+      const g = at(i); if (!g) return;
+      if (pivotSet.has(i)) return;
+      if (g.hp > 1) { g.hp--; danados.push(g); return; }
+      removidos.push(i); if (g.objetivo) objHit++;
+    });
+
+    score += removidos.length * PT_GEMA * combo + creations.length * 30;
+    if (combo >= 2 && removidos.length) mostrarCombo(combo);
+    actualizarHUD();
+    beep(500 + combo * 70, 0.12, 0.3);
+    vibrar(combo > 1 ? [20, 20, 30] : 35);
+
+    const anims = [];
+    removidos.forEach(i => { const g = at(i); if (g) anims.push(tween(g, { scale: 0 }, 150, easeInQuad)); });
+    danados.forEach(g => { g.scale = 1; anims.push(tween(g, { scale: 0.62 }, 80, easeOutQuad).then(() => tween(g, { scale: 1 }, 150, easeOutBack))); });
+    await Promise.all(anims);
+
+    removidos.forEach(i => { grid[(i / N) | 0][i % N] = null; });
+    objRestante -= objHit;
+    actualizarHUD();
+  }
+
+  async function waveNatural(swap, combo) {
+    const { clear, creations } = buscarGrupos(swap);
+    if (clear.size === 0 && creations.length === 0) return false;
+    const protect = new Set(creations.map(c => c.idx));
+    const deton = recolectarDetonacion(clear, protect);
+    await aplicarDetonacion(deton, combo, creations);
+    return true;
+  }
+
+  async function waveExplicita(initial, combo) {
+    const deton = recolectarDetonacion(initial, null);
+    if (deton.size === 0) return false;
+    await aplicarDetonacion(deton, combo, []);
+    return true;
+  }
+
+  // Efecto de intercambiar uno o dos poderes (combos).
+  function efectoSwap(a, b) {
+    const ia = I(a.r, a.c), ib = I(b.r, b.c);
+    const ga = at(ia), gb = at(ib);
+    const set = new Set([ia, ib]);
+    const pa = ga && ga.power, pb = gb && gb.power;
+    const add = i => { if (i >= 0 && i < N * N) set.add(i); };
+    const fila = r => { if (r < 0 || r >= N) return; for (let c = 0; c < N; c++) add(I(r, c)); };
+    const col = c => { if (c < 0 || c >= N) return; for (let r = 0; r < N; r++) add(I(r, c)); };
+    const area = (r, c, rad) => { for (let dr = -rad; dr <= rad; dr++) for (let dc = -rad; dc <= rad; dc++) { const rr = r + dr, cc = c + dc; if (rr >= 0 && rr < N && cc >= 0 && cc < N) add(I(rr, cc)); } };
+    const color = col0 => { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const g = grid[r][c]; if (g && g.tipo === col0) add(I(r, c)); } };
+
+    if (pa && pb) {
+      if (pa === 'estrella' && pb === 'estrella') {
+        for (let i = 0; i < N * N; i++) add(i);                       // estrella + estrella = todo
+      } else if (pa === 'estrella' || pb === 'estrella') {
+        const otro = pa === 'estrella' ? gb : ga, col0 = otro.tipo;
+        if (otro.power === 'bomba') { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const g = grid[r][c]; if (g && g.tipo === col0) area(r, c, 1); } }
+        else { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const g = grid[r][c]; if (g && g.tipo === col0) { fila(r); col(c); } } color(col0); }
+      } else if (pa === 'bomba' && pb === 'bomba') {
+        area(a.r, a.c, 2); area(b.r, b.c, 2);                          // bomba + bomba = 5×5
+      } else {
+        const thick = (pa === 'bomba' || pb === 'bomba') ? 1 : 0;      // línea+línea = cruz; línea+bomba = banda
+        for (let d = -thick; d <= thick; d++) { fila(a.r + d); col(a.c + d); }
+      }
+    } else {
+      const pcell = pa ? ia : ib, pg = at(pcell), otro = pa ? gb : ga;
+      if (pg.power === 'estrella') pg.objColor = otro ? otro.tipo : pg.tipo; // estrella + normal = ese color
+      // el resto (línea/bomba) lo expande la detonación a partir de pcell
+    }
+    return set;
+  }
+
+  /* ===================== Caída y rebaraje ===================== */
+  async function colapsar() {
+    const caidas = [];
+    for (let c = 0; c < N; c++) {
+      let escribir = N - 1;
+      for (let r = N - 1; r >= 0; r--) {
+        if (grid[r][c]) {
+          if (escribir !== r) {
+            grid[escribir][c] = grid[r][c]; grid[r][c] = null;
+            grid[escribir][c].dc = c;
+            caidas.push(tween(grid[escribir][c], { dr: escribir }, 220, easeOutQuad));
+          }
+          escribir--;
+        }
+      }
+      for (let r = escribir; r >= 0; r--) {
+        const g = gem(r, c, (Math.random() * def.colores) | 0);
+        g.dr = r - (escribir + 1);
+        grid[r][c] = g;
+        caidas.push(tween(g, { dr: r }, 260, easeOutQuad));
+      }
+    }
+    await Promise.all(caidas);
+  }
+
+  async function rebarajar() {
+    estado = 'busy';
+    const celdas = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (grid[r][c]) celdas.push(grid[r][c]);
+    const tipos = celdas.map(g => g.tipo);
+    let intentos = 0;
+    do {
+      for (let i = tipos.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [tipos[i], tipos[j]] = [tipos[j], tipos[i]]; }
+      celdas.forEach((g, k) => g.tipo = tipos[k]);
+    } while ((tieneMatches() || !hayMovimientos()) && ++intentos < 60);
+    const anims = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (grid[r][c]) { grid[r][c].scale = 0; anims.push(tween(grid[r][c], { scale: 1 }, 220, easeOutBack)); }
+    await Promise.all(anims);
+  }
+
+  /* ===================== Interacción ===================== */
   function celdaDesdeEvento(e) {
     const rect = cv.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width * N;
-    const y = (e.clientY - rect.top) / rect.height * N;
-    const c = Math.floor(x), r = Math.floor(y);
+    const c = Math.floor((e.clientX - rect.left) / rect.width * N);
+    const r = Math.floor((e.clientY - rect.top) / rect.height * N);
     if (r < 0 || r >= N || c < 0 || c >= N) return null;
     return { r, c };
   }
@@ -517,156 +920,172 @@
     e.preventDefault();
     downCell = celdaDesdeEvento(e);
     if (!downCell) return;
-    if (sel && adyacentes(sel, downCell)) { intentarSwap(sel, downCell); sel = null; }
-    else { sel = downCell; }
+    if (sel && adyacentes(sel, downCell)) { const a = sel; sel = null; intentarSwap(a, downCell); }
+    else sel = downCell;
   });
   cv.addEventListener('pointermove', e => {
     if (estado !== 'idle' || !downCell) return;
     const cur = celdaDesdeEvento(e);
-    if (cur && adyacentes(downCell, cur)) {
-      const a = downCell; downCell = null; sel = null;
-      intentarSwap(a, cur);
-    }
+    if (cur && adyacentes(downCell, cur)) { const a = downCell; downCell = null; sel = null; intentarSwap(a, cur); }
   });
   cv.addEventListener('pointerup', () => { downCell = null; });
   cv.addEventListener('pointercancel', () => { downCell = null; });
 
-  async function intentarSwap(a, b) {
-    estado = 'busy';
-    beep(440, 0.05, 0.15);
-    await animarSwap(a, b);
-    intercambiar(a, b);
-    const matches = encontrarMatches();
-    if (matches.size === 0) {
-      // sin combinación: revertir
-      await animarSwap(a, b);
-      intercambiar(a, b);
-      vibrar(30);
-      estado = 'idle';
-      return;
-    }
-    movs--;
-    actualizarHUD();
-    await resolver(matches, 1);
-    // garantizar que siga habiendo jugadas
-    if (!hayMovimientos()) await rebarajar();
-    estado = 'idle';
-    if (movs <= 0) finPartida();
-  }
-
   function animarSwap(a, b) {
     const ga = grid[a.r][a.c], gb = grid[b.r][b.c];
-    return Promise.all([
-      tween(ga, { dr: b.r, dc: b.c }, 140),
-      tween(gb, { dr: a.r, dc: a.c }, 140)
-    ]);
+    return Promise.all([tween(ga, { dr: b.r, dc: b.c }, 140), tween(gb, { dr: a.r, dc: a.c }, 140)]);
   }
-
-  // Intercambia el contenido lógico de dos celdas y normaliza pos de dibujo.
   function intercambiar(a, b) {
-    const tmp = grid[a.r][a.c];
-    grid[a.r][a.c] = grid[b.r][b.c];
-    grid[b.r][b.c] = tmp;
-    grid[a.r][a.c].dr = a.r; grid[a.r][a.c].dc = a.c;
-    grid[b.r][b.c].dr = b.r; grid[b.r][b.c].dc = b.c;
+    const t = grid[a.r][a.c]; grid[a.r][a.c] = grid[b.r][b.c]; grid[b.r][b.c] = t;
+    const ga = grid[a.r][a.c], gb = grid[b.r][b.c];
+    ga.dr = a.r; ga.dc = a.c; gb.dr = b.r; gb.dc = b.c;
   }
 
-  // Resuelve cascadas recursivamente; `combo` es el multiplicador de cadena.
-  async function resolver(matches, combo) {
-    // puntuar y reventar
-    const ganado = matches.size * PT_GEMA * combo;
-    score += ganado;
-    if (combo >= 2) mostrarCombo(combo);
+  async function intentarSwap(a, b) {
+    estado = 'busy'; beep(440, 0.05, 0.15);
+    await animarSwap(a, b); intercambiar(a, b);
+    const ga = grid[a.r][a.c], gb = grid[b.r][b.c];
+    const hayPoder = (ga && ga.power) || (gb && gb.power);
+    const grupos = buscarGrupos({ a, b });
+    if (grupos.clear.size === 0 && grupos.creations.length === 0 && !hayPoder) {
+      await animarSwap(a, b); intercambiar(a, b); vibrar(30); estado = 'idle'; return;
+    }
+    movs--; actualizarHUD();
+
+    if (hayPoder) {
+      const set = efectoSwap(a, b);
+      await waveExplicita(set, 1);
+      await colapsar();
+      let combo = 2;
+      while (await waveNatural(null, combo)) { await colapsar(); combo++; }
+    } else {
+      let combo = 1, swap = { a, b };
+      while (await waveNatural(swap, combo)) { swap = null; await colapsar(); combo++; }
+    }
+
+    if (chequear() === null && !hayMovimientos()) await rebarajar();
+    estado = 'idle';
+    finalizarSiCorresponde();
+  }
+
+  /* ===================== Niveles ===================== */
+  function chequear() {
+    if (def.tipo === 'puntos' && score >= def.objetivoPuntos) return 'win';
+    if (def.tipo === 'romper' && objRestante <= 0) return 'win';
+    if (movs <= 0) return 'lose';
+    return null;
+  }
+
+  function estrellas() {
+    if (def.tipo === 'puntos') { const r = score / def.objetivoPuntos; return r >= 1.6 ? 3 : r >= 1.2 ? 2 : 1; }
+    const r = movs / def.movs; return r >= 0.5 ? 3 : r >= 0.25 ? 2 : 1;
+  }
+
+  function iniciarNivel(n) {
+    def = defNivel(n);
+    score = 0; movs = def.movs; sel = null; estado = 'idle';
+    generarNivel();
+    objRestante = contarObjetivos();
+    mostrarVista('juego');
+    medir();
     actualizarHUD();
-    beep(520 + combo * 80, 0.12, 0.3);
-    vibrar(combo > 1 ? [30, 30, 40] : 40);
-
-    const explosiones = [];
-    matches.forEach(idx => {
-      const r = Math.floor(idx / N), c = idx % N;
-      explosiones.push(tween(grid[r][c], { scale: 0 }, 160, easeInQuad));
-    });
-    await Promise.all(explosiones);
-    matches.forEach(idx => { grid[Math.floor(idx / N)][idx % N] = null; });
-
-    await colapsar();
-
-    const siguientes = encontrarMatches();
-    if (siguientes.size > 0) await resolver(siguientes, combo + 1);
   }
 
-  // Hace caer las gemas y rellena los huecos por arriba.
-  async function colapsar() {
-    const caidas = [];
-    for (let c = 0; c < N; c++) {
-      // compactar hacia abajo
-      let escribir = N - 1;
-      for (let r = N - 1; r >= 0; r--) {
-        if (grid[r][c]) {
-          if (escribir !== r) {
-            grid[escribir][c] = grid[r][c];
-            grid[r][c] = null;
-            caidas.push(tween(grid[escribir][c], { dr: escribir }, 220, easeOutQuad));
-          }
-          escribir--;
-        }
+  function nivelCompletado() {
+    const e = estrellas();
+    prog.stars[def.n] = Math.max(prog.stars[def.n] || 0, e);
+    prog.max = Math.max(prog.max, def.n + 1);
+    guardarProg();
+    $('finTitulo').textContent = '¡Nivel superado!';
+    pintarEstrellas(e);
+    $('finMsg').textContent = def.tipo === 'puntos' ? ('Puntos: ' + score) : ('Movimientos restantes: ' + Math.max(0, movs));
+    $('btnSiguiente').style.display = ''; $('btnReintentar').style.display = 'none';
+    $('modalFin').classList.add('abierto');
+    avisoFin();
+  }
+  function nivelFallado() {
+    $('finTitulo').textContent = 'Sin movimientos';
+    pintarEstrellas(0);
+    $('finMsg').textContent = def.tipo === 'puntos'
+      ? ('Te faltaron ' + Math.max(0, def.objetivoPuntos - score) + ' puntos')
+      : ('Quedaban ' + Math.max(0, objRestante) + ' diamantes');
+    $('btnSiguiente').style.display = 'none'; $('btnReintentar').style.display = '';
+    $('modalFin').classList.add('abierto');
+    beep(300, 0.25, 0.35);
+  }
+  function finalizarSiCorresponde() {
+    const r = chequear();
+    if (r === 'win') nivelCompletado();
+    else if (r === 'lose') nivelFallado();
+  }
+
+  function pintarEstrellas(e) {
+    let h = '';
+    for (let i = 0; i < 3; i++) h += '<span class="' + (i < e ? 'on' : 'off') + '">★</span>';
+    $('finEstrellas').innerHTML = h;
+  }
+
+  /* ===================== Mapa ===================== */
+  function mostrarVista(v) {
+    vista = v;
+    $('vistaMapa').classList.toggle('activa', v === 'mapa');
+    $('vistaJuego').classList.toggle('activa', v === 'juego');
+    $('btnMapaTop').style.display = v === 'juego' ? '' : 'none';
+  }
+
+  function irAlMapa() { $('modalFin').classList.remove('abierto'); mostrarVista('mapa'); renderMapa(); }
+
+  function renderMapa() {
+    const cont = $('mapaMundos');
+    cont.innerHTML = '';
+    const maxW = mundoDeNivel(prog.max) + 1;
+    for (let w = 1; w <= maxW; w++) {
+      const info = infoMundo(w);
+      const sec = document.createElement('section');
+      sec.className = 'mundo'; sec.style.setProperty('--tint', info.tint);
+      const head = document.createElement('div');
+      head.className = 'mundo-head';
+      head.innerHTML = '<span class="mundo-num">Mundo ' + w + '</span>' +
+        '<span class="mundo-nombre">' + info.nombre + '</span>' +
+        '<span class="mundo-feat">' + info.feat + '</span>';
+      sec.appendChild(head);
+      const path = document.createElement('div');
+      path.className = 'sendero';
+      for (let k = 1; k <= NIVELES_POR_MUNDO; k++) {
+        const n = (w - 1) * NIVELES_POR_MUNDO + k;
+        const unlocked = n <= prog.max;
+        const stars = prog.stars[n] || 0;
+        const nodo = document.createElement('button');
+        nodo.className = 'nivel-nodo' + (unlocked ? '' : ' bloq') + (n === prog.max ? ' actual' : '');
+        nodo.innerHTML = unlocked
+          ? '<span class="nn">' + k + '</span><span class="ne">' + '★'.repeat(stars) + '☆'.repeat(3 - stars) + '</span>'
+          : '🔒';
+        if (unlocked) nodo.addEventListener('click', () => iniciarNivel(n));
+        path.appendChild(nodo);
       }
-      // rellenar arriba con gemas nuevas que entran desde fuera
-      for (let r = escribir; r >= 0; r--) {
-        const g = nuevaGema(r, c, tipoRandom());
-        g.dr = r - (escribir + 1);   // arranca por encima del tablero
-        grid[r][c] = g;
-        caidas.push(tween(g, { dr: r }, 260, easeOutQuad));
-      }
+      sec.appendChild(path);
+      cont.appendChild(sec);
     }
-    await Promise.all(caidas);
+    requestAnimationFrame(() => { const a = cont.querySelector('.actual'); if (a) a.scrollIntoView({ block: 'center' }); });
   }
 
-  async function rebarajar() {
-    estado = 'busy';
-    const desv = [];
-    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
-      if (grid[r][c]) desv.push(tween(grid[r][c], { scale: 0 }, 160, easeInQuad));
-    await Promise.all(desv);
-    generar();
-    const ap = [];
-    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-      grid[r][c].scale = 0;
-      ap.push(tween(grid[r][c], { scale: 1 }, 220, easeOutBack));
-    }
-    await Promise.all(ap);
+  /* ===================== HUD ===================== */
+  function actualizarHUD() {
+    $('hudNivel').textContent = def.w + '·' + def.em;
+    $('moves').textContent = Math.max(0, movs);
+    $('score').textContent = score;
+    const ov = $('objVal');
+    if (def.tipo === 'puntos') { $('objLbl').textContent = 'Meta'; ov.textContent = score + '/' + def.objetivoPuntos; ov.classList.remove('romper'); }
+    else { $('objLbl').textContent = 'Romper'; ov.textContent = Math.max(0, objRestante) + ' 💎'; ov.classList.add('romper'); }
   }
 
-  // --- Combo flotante ---
   function mostrarCombo(n) {
     const el = $('combo');
     el.textContent = '¡Combo ×' + n + '!';
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   }
 
-  // --- HUD ---
-  function actualizarHUD() {
-    $('score').textContent = score;
-    $('moves').textContent = Math.max(0, movs);
-    if (score > best) { best = score; localStorage.setItem(BEST_KEY, best); }
-    $('best').textContent = best;
-  }
-
-  function finPartida() {
-    $('finScore').textContent = score;
-    $('finMsg').textContent = score >= best && score > 0 ? '¡Nuevo récord! 💎' : 'Récord: ' + best;
-    $('modalFin').classList.add('abierto');
-    avisoFin();
-  }
-
-  function nuevaPartida() {
-    $('modalFin').classList.remove('abierto');
-    score = 0; movs = MOVS_INI; sel = null; estado = 'idle';
-    generar();
-    actualizarHUD();
-  }
-
-  // --- Audio (WebAudio, sin archivos) ---
+  /* ===================== Audio ===================== */
   let actx = null;
   function beep(freq = 880, dur = 0.12, vol = 0.4) {
     try {
@@ -680,56 +1099,46 @@
       o.start(); o.stop(actx.currentTime + dur);
     } catch {}
   }
-  function avisoFin() {
-    beep(660, 0.18); setTimeout(() => beep(880, 0.18), 180); setTimeout(() => beep(1175, 0.32), 380);
-  }
+  function avisoFin() { beep(660, 0.18); setTimeout(() => beep(880, 0.18), 170); setTimeout(() => beep(1175, 0.3), 360); }
   function vibrar(p) { if (navigator.vibrate) navigator.vibrate(p); }
 
-  // --- Eventos UI ---
-  $('btnNuevo').addEventListener('click', () => { if (estado === 'idle') nuevaPartida(); });
-  $('btnJugar').addEventListener('click', nuevaPartida);
+  /* ===================== Eventos UI ===================== */
+  $('btnMapaTop').addEventListener('click', irAlMapa);
+  $('btnMapa2').addEventListener('click', irAlMapa);
+  $('btnMapaModal').addEventListener('click', irAlMapa);
+  $('btnSiguiente').addEventListener('click', () => { $('modalFin').classList.remove('abierto'); iniciarNivel(def.n + 1); });
+  $('btnReintentar').addEventListener('click', () => { $('modalFin').classList.remove('abierto'); iniciarNivel(def.n); });
   $('btnRevolver').addEventListener('click', async () => {
     if (estado !== 'idle' || movs <= 0) return;
-    movs = Math.max(0, movs - 1);   // rebarajar manual cuesta un movimiento
-    actualizarHUD();
+    movs = Math.max(0, movs - 1); actualizarHUD();
     await rebarajar();
     estado = 'idle';
-    if (movs <= 0) finPartida();
+    finalizarSiCorresponde();
   });
 
-  window.addEventListener('resize', () => { medir(); });
+  window.addEventListener('resize', () => { if (vista === 'juego') medir(); });
 
-  // --- Arranque ---
-  medir();
-  generar();
-  actualizarHUD();
+  /* ===================== Arranque ===================== */
+  mostrarVista('mapa');
+  renderMapa();
   requestAnimationFrame(loop);
 
-  // --- PWA: service worker + botón Instalar ---
+  /* ===================== PWA ===================== */
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    });
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
   }
   let deferredPrompt = null;
   const btnInstalar = $('btnInstalar');
-  const yaInstalada = () =>
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true;
+  const yaInstalada = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   if (!yaInstalada()) {
-    window.addEventListener('beforeinstallprompt', e => {
-      e.preventDefault(); deferredPrompt = e; btnInstalar.style.display = '';
-    });
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; btnInstalar.style.display = ''; });
   }
   btnInstalar.addEventListener('click', async () => {
     if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
+    deferredPrompt.prompt(); await deferredPrompt.userChoice;
     deferredPrompt = null; btnInstalar.style.display = 'none';
   });
-  window.addEventListener('appinstalled', () => {
-    btnInstalar.style.display = 'none'; deferredPrompt = null;
-  });
+  window.addEventListener('appinstalled', () => { btnInstalar.style.display = 'none'; deferredPrompt = null; });
 </script>
   <script type="module" src="https://cdn.jsdelivr.net/npm/@closerclick/closer-click-support@0.3/src/index.js"></script>
 </body>

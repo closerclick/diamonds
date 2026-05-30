@@ -1,4 +1,4 @@
-const CACHE = 'diamonds-v1';
+const CACHE = 'diamonds-v2';
 const ASSETS = [
   './',
   './index.html',
