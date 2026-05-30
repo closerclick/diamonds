@@ -1421,10 +1421,6 @@
   let mapActualXY = null;
   let mapPanInit = false;
 
-  function stopXY(o, centerX, amp) {
-    return { x: centerX + amp * Math.sin(o * 0.7), y: 90 + o * 118 };
-  }
-
   function renderMapa() {
     const vp = $('mapaVp'), lienzo = $('mapaMundo'), svg = $('mapaSvg');
     mapDim.vw = vp.clientWidth || window.innerWidth;
@@ -1451,9 +1447,15 @@
       }
     }
 
-    mapStops.forEach((s, o) => { const p = stopXY(o, centerX, amp); s.x = p.x; s.y = p.y; });
+    // Camino siempre ASCENDENTE: el nivel 1 (o=0) queda abajo y cada parada
+    // siguiente sube. La X serpentea según el orden real.
+    const lastO = mapStops.length - 1;
+    mapStops.forEach((s, o) => {
+      s.x = centerX + amp * Math.sin(o * 0.7);
+      s.y = 90 + (lastO - o) * 118;
+    });
     mapDim.w = Math.max(mapDim.vw, 320);
-    mapDim.h = (mapStops.length ? mapStops[mapStops.length - 1].y : 0) + 140;
+    mapDim.h = (lastO >= 0 ? 90 + lastO * 118 : 0) + 140;
     lienzo.style.width = mapDim.w + 'px';
     lienzo.style.height = mapDim.h + 'px';
 
