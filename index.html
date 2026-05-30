@@ -386,6 +386,7 @@
       <div class="modal-botones">
         <button id="btnSiguiente">Siguiente nivel</button>
         <button id="btnReintentar">Reintentar</button>
+        <button class="sec" id="btnEndless">∞ Seguir sin límite</button>
         <button class="sec" id="btnMapaModal">Ir al mapa</button>
       </div>
     </div>
@@ -488,6 +489,7 @@
   let estado = 'idle';         // 'idle' | 'busy'
   let sel = null;
   let score = 0, movs = 0, objRestante = 0;
+  let endless = false;         // modo libre: sin límite de movimientos
   let def = defNivel(1);
   let vista = 'mapa';
   let tweens = [];
@@ -1212,6 +1214,7 @@
 
   /* ===================== Niveles ===================== */
   function chequear() {
+    if (endless) return null;   // en modo libre el nivel nunca termina
     if (def.tipo === 'puntos' && score >= def.objetivoPuntos) return 'win';
     if (def.tipo === 'romper' && objRestante <= 0) return 'win';
     if (movs <= 0) return 'lose';
@@ -1226,12 +1229,23 @@
   function iniciarNivel(n) {
     if (!desbloqueado(n)) { beep(300, 0.18, 0.3); return; }
     def = defNivel(n);
-    score = 0; movs = def.movs; sel = null; estado = 'idle';
+    score = 0; movs = def.movs; sel = null; estado = 'idle'; endless = false;
     generarNivel();
     objRestante = contarObjetivos();
     mostrarVista('juego');
     medir();
     actualizarHUD();
+  }
+
+  // Continúa el tablero actual sin límite de movimientos (modo libre).
+  async function entrarEndless() {
+    $('modalFin').classList.remove('abierto');
+    endless = true;
+    movs = Infinity;
+    estado = 'idle';
+    actualizarHUD();
+    if (!hayMovimientos()) await rebarajar();
+    estado = 'idle';
   }
 
   function nivelCompletado() {
@@ -1243,6 +1257,7 @@
     pintarEstrellas(e);
     $('finMsg').textContent = def.tipo === 'puntos' ? ('Puntos: ' + score) : ('Movimientos restantes: ' + Math.max(0, movs));
     $('btnSiguiente').style.display = ''; $('btnReintentar').style.display = 'none';
+    $('btnEndless').style.display = '';
     $('modalFin').classList.add('abierto');
     avisoFin();
   }
@@ -1253,6 +1268,7 @@
       ? ('Te faltaron ' + Math.max(0, def.objetivoPuntos - score) + ' puntos')
       : ('Quedaban ' + Math.max(0, objRestante) + ' diamantes');
     $('btnSiguiente').style.display = 'none'; $('btnReintentar').style.display = '';
+    $('btnEndless').style.display = '';
     $('modalFin').classList.add('abierto');
     beep(300, 0.25, 0.35);
   }
@@ -1365,6 +1381,7 @@
   $('btnMapaModal').addEventListener('click', irAlMapa);
   $('btnSiguiente').addEventListener('click', () => { $('modalFin').classList.remove('abierto'); iniciarNivel(def.n + 1); });
   $('btnReintentar').addEventListener('click', () => { $('modalFin').classList.remove('abierto'); iniciarNivel(def.n); });
+  $('btnEndless').addEventListener('click', entrarEndless);
   $('btnRevolver').addEventListener('click', async () => {
     if (estado !== 'idle' || movs <= 0) return;
     movs = Math.max(0, movs - 1); actualizarHUD();
