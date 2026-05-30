@@ -372,7 +372,6 @@
 
     <div class="control">
       <button id="btnMapa2">← Mapa</button>
-      <button class="primary" id="btnRevolver">⤮ Rebarajar</button>
     </div>
   </div>
 
@@ -1108,44 +1107,92 @@
     return set;
   }
 
-  /* ===================== Caída y rebaraje ===================== */
-  async function colapsar() {
-    const caidas = [];
-    for (let c = 0; c < N; c++) {
-      let escribir = N - 1;
-      for (let r = N - 1; r >= 0; r--) {
-        if (grid[r][c]) {
-          if (escribir !== r) {
-            grid[escribir][c] = grid[r][c]; grid[r][c] = null;
-            grid[escribir][c].dc = c;
-            caidas.push(tween(grid[escribir][c], { dr: escribir }, 220, easeOutQuad));
+  /* ===================== Caída (gravedad con diagonal) ===================== */
+  // Asienta el tablero: primero gravedad recta + relleno desde arriba; cuando ya
+  // nada puede bajar recto, un diamante que tiene su casilla de abajo ocupada
+  // baja en diagonal a un hueco contiguo (prioridad al azar izquierda/derecha).
+  // `refill` rellena los huecos superiores con gemas nuevas. `fixed` es un Set de
+  // gemas que NO se mueven (diamantes especiales durante la recuperación).
+  async function colapsar(opts) {
+    const refill = !opts || opts.refill !== false;
+    const fixed = (opts && opts.fixed) || null;
+    const movible = g => g && !(fixed && fixed.has(g));
+
+    let cambio = true;
+    while (cambio) {
+      cambio = false;
+
+      // 1) Gravedad recta + relleno, hasta asentar.
+      let recto = true;
+      while (recto) {
+        recto = false;
+        const tw = [];
+        for (let r = N - 2; r >= 0; r--) for (let c = 0; c < N; c++) {
+          const g = grid[r][c];
+          if (movible(g) && !grid[r + 1][c]) {
+            grid[r + 1][c] = g; grid[r][c] = null;
+            tw.push(tween(g, { dr: r + 1 }, 90)); recto = true; cambio = true;
           }
-          escribir--;
         }
+        if (refill) for (let c = 0; c < N; c++) {
+          if (!grid[0][c]) {
+            const g = gem(0, c, (Math.random() * def.colores) | 0);
+            g.dr = -1; grid[0][c] = g;
+            tw.push(tween(g, { dr: 0 }, 110)); recto = true; cambio = true;
+          }
+        }
+        if (tw.length) await Promise.all(tw);
       }
-      for (let r = escribir; r >= 0; r--) {
-        const g = gem(r, c, (Math.random() * def.colores) | 0);
-        g.dr = r - (escribir + 1);
-        grid[r][c] = g;
-        caidas.push(tween(g, { dr: r }, 260, easeOutQuad));
+
+      // 2) Un paso diagonal donde la casilla de abajo está bloqueada.
+      const td = [];
+      for (let r = N - 2; r >= 0; r--) for (let c = 0; c < N; c++) {
+        const g = grid[r][c];
+        if (!movible(g) || !grid[r + 1][c]) continue;   // libre abajo => lo maneja la recta
+        const ops = [];
+        if (c > 0 && !grid[r + 1][c - 1]) ops.push(c - 1);
+        if (c < N - 1 && !grid[r + 1][c + 1]) ops.push(c + 1);
+        if (!ops.length) continue;
+        const nc = ops[(Math.random() * ops.length) | 0];  // prioridad al azar izq/der
+        grid[r + 1][nc] = g; grid[r][c] = null;
+        td.push(tween(g, { dr: r + 1, dc: nc }, 120)); cambio = true;
       }
+      if (td.length) await Promise.all(td);
     }
-    await Promise.all(caidas);
   }
 
-  async function rebarajar() {
+  // Sin movimientos posibles: estallan los diamantes estándar; los especiales
+  // mantienen su posición. Se rellena por gravedad (con diagonal) alrededor de
+  // ellos y se resuelven las cascadas. Se repite hasta que vuelva a haber jugada.
+  async function recuperar() {
     estado = 'busy';
-    const celdas = [];
-    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (grid[r][c]) celdas.push(grid[r][c]);
-    const tipos = celdas.map(g => g.tipo);
-    let intentos = 0;
-    do {
-      for (let i = tipos.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [tipos[i], tipos[j]] = [tipos[j], tipos[i]]; }
-      celdas.forEach((g, k) => g.tipo = tipos[k]);
-    } while ((tieneMatches() || !hayMovimientos()) && ++intentos < 60);
-    const anims = [];
-    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (grid[r][c]) { grid[r][c].scale = 0; anims.push(tween(grid[r][c], { scale: 1 }, 220, easeOutBack)); }
-    await Promise.all(anims);
+    let guard = 0;
+    while (!hayMovimientos() && guard++ < 30) {
+      const rem = [];
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        const g = grid[r][c];
+        if (g && g.tipo >= 0 && !g.power) rem.push(g);
+      }
+      if (!rem.length) break;                  // solo quedan especiales: nada que hacer
+      rem.forEach(g => { g.charge = 1; });
+      await espera(140);
+      const anims = [];
+      rem.forEach(g => {
+        const cx = (g.dc + 0.5) * cell, cy = (g.dr + 0.5) * cell;
+        spawnEsquirlas(cx, cy, ...COLORES[g.tipo]);
+        anims.push(tween(g, { scale: 0, charge: 0 }, 130, easeInQuad));
+      });
+      await Promise.all(anims);
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (rem.includes(grid[r][c])) grid[r][c] = null;
+
+      const fixed = new Set();
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (grid[r][c] && grid[r][c].power) fixed.add(grid[r][c]);
+      await colapsar({ refill: true, fixed });
+
+      // Las gemas nuevas pueden formar combinaciones: resolverlas.
+      let combo = 1;
+      while (await waveNatural(null, combo)) { await colapsar(); combo++; }
+    }
   }
 
   /* ===================== Interacción ===================== */
@@ -1207,7 +1254,7 @@
       while (await waveNatural(swap, combo)) { swap = null; await colapsar(); combo++; }
     }
 
-    if (chequear() === null && !hayMovimientos()) await rebarajar();
+    if (chequear() === null && !hayMovimientos()) await recuperar();
     estado = 'idle';
     finalizarSiCorresponde();
   }
@@ -1244,7 +1291,7 @@
     movs = Infinity;
     estado = 'idle';
     actualizarHUD();
-    if (!hayMovimientos()) await rebarajar();
+    if (!hayMovimientos()) await recuperar();
     estado = 'idle';
   }
 
@@ -1382,13 +1429,6 @@
   $('btnSiguiente').addEventListener('click', () => { $('modalFin').classList.remove('abierto'); iniciarNivel(def.n + 1); });
   $('btnReintentar').addEventListener('click', () => { $('modalFin').classList.remove('abierto'); iniciarNivel(def.n); });
   $('btnEndless').addEventListener('click', entrarEndless);
-  $('btnRevolver').addEventListener('click', async () => {
-    if (estado !== 'idle' || movs <= 0) return;
-    movs = Math.max(0, movs - 1); actualizarHUD();
-    await rebarajar();
-    estado = 'idle';
-    finalizarSiCorresponde();
-  });
 
   window.addEventListener('resize', () => { if (vista === 'juego') medir(); });
 
