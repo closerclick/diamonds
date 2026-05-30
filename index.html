@@ -1189,6 +1189,11 @@
       for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (grid[r][c] && grid[r][c].power) fixed.add(grid[r][c]);
       await colapsar({ refill: true, fixed });
 
+      // Caso especial (p. ej. 3 especiales en fila que dejan un hueco bajo un
+      // especial): tras el rellenado, dejar caer TODO normalmente para que esos
+      // especiales se asienten en los huecos que les queden debajo.
+      await colapsar();
+
       // Las gemas nuevas pueden formar combinaciones: resolverlas.
       let combo = 1;
       while (await waveNatural(null, combo)) { await colapsar(); combo++; }
