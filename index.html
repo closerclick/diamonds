@@ -1487,7 +1487,7 @@
         const info = infoMundo(s.w);
         if (s.abierto) {
           el.innerHTML = '<span class="pn">Portal</span><span class="pw">' + info.nombre + '</span>';
-          el.addEventListener('click', () => { if (!panHaArrastrado()) iniciarNivel((s.w - 1) * NIVELES_POR_MUNDO + 1); });
+          el._accion = () => iniciarNivel((s.w - 1) * NIVELES_POR_MUNDO + 1);
         } else {
           el.innerHTML = '<span class="pn">Portal</span><span class="plock">🔒 ★' + s.tot + '/' + s.req + '</span>';
         }
@@ -1500,7 +1500,7 @@
         el.style.left = s.x + 'px'; el.style.top = s.y + 'px';
         if (s.unlocked) {
           el.innerHTML = '<span class="nn">' + s.k + '</span><span class="ne">' + '★'.repeat(stars) + '☆'.repeat(3 - stars) + '</span>';
-          el.addEventListener('click', () => { if (!panHaArrastrado()) iniciarNivel(s.n); });
+          el._accion = () => iniciarNivel(s.n);
         } else if (s.n <= prog.max) {
           el.innerHTML = '<span class="nn">🔒</span><span class="ne">★ ' + tot + '/' + s.req + '</span>';
         } else {
@@ -1580,9 +1580,17 @@
       aplicarPan();
       actualizarMapaHud();
     });
-    const fin = () => { panStart = null; vp.classList.remove('dragging'); };
+    const fin = e => {
+      const fueTap = panStart && !panMoved;
+      panStart = null; vp.classList.remove('dragging');
+      if (fueTap && e && typeof e.clientX === 'number') {
+        const t = document.elementFromPoint(e.clientX, e.clientY);
+        const nodo = t && t.closest && t.closest('.nivel-nodo, .portal');
+        if (nodo && nodo._accion) nodo._accion();
+      }
+    };
     vp.addEventListener('pointerup', fin);
-    vp.addEventListener('pointercancel', fin);
+    vp.addEventListener('pointercancel', () => { panStart = null; vp.classList.remove('dragging'); });
     $('mapaRecenter').addEventListener('click', () => centrarEn(mapActualXY, true));
   }
 
