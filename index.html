@@ -86,82 +86,113 @@
   .vista { flex: 1 1 auto; min-height: 0; display: none; flex-direction: column; }
   .vista.activa { display: flex; }
 
-  /* --- Mapa de mundos --- */
-  #vistaMapa { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  .mapa-intro {
-    text-align: center;
-    padding: 2.2vh 6vw 1vh;
-  }
-  .mapa-intro h1 {
-    font-size: clamp(22px, 4vh, 34px);
-    font-weight: 800;
-    background: linear-gradient(90deg, #a5f3fc, #22d3ee);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .mapa-intro p { color: #94a3b8; font-size: clamp(12px, 1.9vh, 15px); margin-top: 4px; }
-  #mapaMundos { padding: 0 4vw 4vh; }
-  .mundo {
-    --tint: #22d3ee;
-    margin: 1.6vh auto;
-    max-width: 560px;
-    border-radius: 18px;
-    padding: 16px 14px 22px;
+  /* --- Mapa de mundos (lienzo navegable con pan) --- */
+  #vistaMapa { position: relative; overflow: hidden; }
+  /* Viewport que captura el arrastre (pan) */
+  .mapa-vp {
+    position: absolute; inset: 0;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
     background:
-      linear-gradient(180deg, color-mix(in srgb, var(--tint) 16%, transparent), rgba(148,163,184,.04));
-    border: 1px solid color-mix(in srgb, var(--tint) 35%, rgba(148,163,184,.15));
+      radial-gradient(60% 50% at 30% 10%, rgba(34,211,238,.07), transparent 70%),
+      radial-gradient(55% 45% at 80% 60%, rgba(217,180,254,.06), transparent 70%);
   }
-  .mundo-head { text-align: center; margin-bottom: 14px; }
-  .mundo-num {
-    display: inline-block;
-    font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--tint);
+  .mapa-vp.dragging { cursor: grabbing; }
+  /* Mundo (lienzo grande que se traslada con el pan) */
+  #mapaMundo {
+    position: absolute; top: 0; left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
   }
-  .mundo-nombre { display: block; font-size: clamp(18px, 2.8vh, 24px); font-weight: 800; color: #f1f5f9; }
-  .mundo-feat { display: block; font-size: clamp(11px, 1.7vh, 14px); color: #94a3b8; margin-top: 2px; }
-  .mundo-lock {
-    display: inline-block; margin-top: 8px;
-    font-size: clamp(11px, 1.7vh, 14px); font-weight: 800;
-    color: #fcd34d; background: rgba(252,211,77,.12);
-    border: 1px solid rgba(252,211,77,.4); border-radius: 50px; padding: 3px 12px;
+  #mapaSvg { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+  /* Cabecera flotante del mundo actual */
+  .mapa-hud {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+    display: flex; align-items: center; gap: 10px;
+    padding: calc(env(safe-area-inset-top) + 1.2vh) 4vw 1.2vh;
+    background: linear-gradient(180deg, rgba(11,18,32,.9), rgba(11,18,32,0));
+    pointer-events: none;
   }
-  .sendero {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 14px 18px;
-  }
-  /* Serpenteo: desplaza filas para dar sensación de camino */
+  .mapa-hud .mh-num { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--tint, #22d3ee); }
+  .mapa-hud .mh-nombre { font-size: clamp(17px, 2.6vh, 22px); font-weight: 800; color: #f1f5f9; line-height: 1.05; }
+  .mapa-hud .mh-feat { font-size: clamp(10px, 1.5vh, 13px); color: #94a3b8; }
+  .mapa-hud .mh-stars { margin-left: auto; font-weight: 800; color: #fcd34d; font-size: clamp(13px, 2vh, 16px); }
+
+  /* Nodo de nivel posicionado en el lienzo */
   .nivel-nodo {
-    position: relative;
-    width: clamp(56px, 16vw, 72px);
-    height: clamp(56px, 16vw, 72px);
+    position: absolute;
+    width: 64px; height: 64px;
+    margin: -32px 0 0 -32px;            /* centrar en (x,y) */
     border-radius: 50%;
-    border: 2px solid color-mix(in srgb, var(--tint) 60%, #fff 0%);
-    background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--tint) 45%, #0b1220), #0b1220);
+    border: 3px solid color-mix(in srgb, var(--tint) 65%, #fff 0%);
+    background: radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--tint) 50%, #0b1220), #0b1220);
     color: #e2e8f0;
     cursor: pointer;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 2px;
-    transition: transform .15s ease, box-shadow .15s ease;
+    gap: 1px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.45);
+    transition: transform .12s ease, box-shadow .15s ease;
+    z-index: 2;
   }
-  .nivel-nodo:nth-child(4n+2) { transform: translateY(10px); }
-  .nivel-nodo:nth-child(4n+3) { transform: translateY(16px); }
-  .nivel-nodo:nth-child(4n+4) { transform: translateY(10px); }
-  .nivel-nodo:active { transform: scale(.94); }
-  .nivel-nodo .nn { font-size: clamp(17px, 4.4vw, 22px); font-weight: 800; line-height: 1; }
-  .nivel-nodo .ne { font-size: clamp(8px, 2.4vw, 11px); letter-spacing: -1px; color: #fcd34d; }
+  .nivel-nodo:active { transform: scale(.92); }
+  .nivel-nodo .nn { font-size: 21px; font-weight: 800; line-height: 1; }
+  .nivel-nodo .ne { font-size: 10px; letter-spacing: -1px; color: #fcd34d; }
   .nivel-nodo.bloq {
-    border-color: rgba(148,163,184,.28);
+    border-color: rgba(148,163,184,.3);
     background: rgba(148,163,184,.08);
-    color: #64748b; cursor: default;
+    color: #64748b; cursor: default; box-shadow: none;
   }
-  .nivel-nodo.actual {
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--tint) 60%, transparent), 0 0 20px color-mix(in srgb, var(--tint) 50%, transparent);
-  }
-  /* Nivel-puerta: requiere un mínimo de estrellas (jefe / entrada de mundo) */
-  .nivel-nodo.puerta { border-color: #fcd34d; }
-  .nivel-nodo.puerta.bloq { border-color: rgba(252,211,77,.45); }
   .nivel-nodo.bloq .ne { color: #fcd34d; }
+  .nivel-nodo.actual {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--tint) 55%, transparent), 0 0 26px color-mix(in srgb, var(--tint) 60%, transparent);
+    animation: latePulse 1.6s ease-in-out infinite;
+  }
+  @keyframes latePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+  /* Portal de entrada a un mundo */
+  .portal {
+    position: absolute;
+    width: 92px; height: 92px;
+    margin: -46px 0 0 -46px;
+    border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 2;
+    color: #06121b; font-weight: 800; text-align: center;
+    border: 3px solid color-mix(in srgb, var(--tint) 80%, #fff);
+    background:
+      radial-gradient(circle at 50% 50%, #fff 0%, color-mix(in srgb, var(--tint) 70%, #0b1220) 45%, #0b1220 100%);
+    box-shadow: 0 0 28px color-mix(in srgb, var(--tint) 55%, transparent);
+  }
+  .portal .pn { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #e2e8f0; }
+  .portal .pw { font-size: clamp(12px, 1.7vh, 15px); color: #fff; }
+  .portal.bloq {
+    cursor: default; color: #94a3b8;
+    border-color: rgba(252,211,77,.5);
+    background: radial-gradient(circle at 50% 50%, rgba(148,163,184,.15), #0b1220 70%);
+    box-shadow: none;
+  }
+  .portal .plock { font-size: 13px; font-weight: 800; color: #fcd34d; }
+
+  /* Pista de "arrastra para explorar" */
+  .mapa-hint {
+    position: absolute; left: 50%; bottom: calc(1.4vh + env(safe-area-inset-bottom));
+    transform: translateX(-50%); z-index: 3;
+    font-size: clamp(11px, 1.7vh, 14px); color: #94a3b8;
+    background: rgba(11,18,32,.7); border: 1px solid rgba(148,163,184,.18);
+    padding: 6px 14px; border-radius: 50px; pointer-events: none;
+    transition: opacity .4s ease;
+  }
+  /* Botón "ir al nivel actual" (re-centra) */
+  .mapa-recenter {
+    position: absolute; right: 4vw; bottom: calc(1.4vh + env(safe-area-inset-bottom));
+    z-index: 3;
+    border: 1px solid rgba(148,163,184,.25); background: rgba(11,18,32,.8);
+    color: #e2e8f0; font-weight: 700; font-size: clamp(12px, 1.9vh, 15px);
+    border-radius: 50px; padding: 9px 16px; cursor: pointer;
+  }
+  .mapa-recenter:active { background: rgba(148,163,184,.2); }
 
   /* --- HUD de juego --- */
   .scores {
@@ -338,11 +369,14 @@
 
   <!-- ============ VISTA MAPA ============ -->
   <div class="vista activa" id="vistaMapa">
-    <div class="mapa-intro">
-      <h1>Mapa de mundos</h1>
-      <p>Cada mundo añade una mecánica nueva. ¡Combina, rompe y supera cada nivel!</p>
+    <div class="mapa-vp" id="mapaVp">
+      <div id="mapaMundo">
+        <svg id="mapaSvg"></svg>
+      </div>
     </div>
-    <div id="mapaMundos"></div>
+    <div class="mapa-hud" id="mapaHud"></div>
+    <div class="mapa-hint" id="mapaHint">Arrastra para explorar el mapa</div>
+    <button class="mapa-recenter" id="mapaRecenter">◎ Nivel actual</button>
   </div>
 
   <!-- ============ VISTA JUEGO ============ -->
@@ -1435,7 +1469,7 @@
   $('btnReintentar').addEventListener('click', () => { $('modalFin').classList.remove('abierto'); iniciarNivel(def.n); });
   $('btnEndless').addEventListener('click', entrarEndless);
 
-  window.addEventListener('resize', () => { if (vista === 'juego') medir(); });
+  window.addEventListener('resize', () => { if (vista === 'juego') medir(); else if (vista === 'mapa') renderMapa(); });
 
   /* ===================== Arranque ===================== */
   mostrarVista('mapa');
