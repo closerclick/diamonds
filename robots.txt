@@ -1,0 +1,7 @@
+# Solo la cáscara pública de la herramienta es indexable.
+# La partida y el récord viven en localStorage y nunca llegan al servidor:
+# no es indexable y así debe seguir.
+User-agent: *
+Allow: /
+
+Sitemap: https://diamonds.closer.click/sitemap.xml

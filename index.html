@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1220">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="Diamonds">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Diamonds — Juego casual de combinar diamantes</title>
+<meta name="description" content="Juego casual de combinar diamantes: intercambia gemas, alinea 3 o más del mismo color, encadena combos y supera tu récord. Funciona sin conexión." />
+<link rel="canonical" href="https://diamonds.closer.click/" />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="es_ES" />
+<meta property="og:site_name" content="Closer Click" />
+<meta property="og:title" content="Diamonds" />
+<meta property="og:description" content="Juego casual de combinar diamantes: alinea 3 o más, encadena combos y supera tu récord." />
+<meta property="og:url" content="https://diamonds.closer.click/" />
+<meta property="og:image" content="https://diamonds.closer.click/og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Diamonds" />
+<meta name="twitter:description" content="Juego casual de combinar diamantes: alinea 3 o más, encadena combos y supera tu récord." />
+<meta name="twitter:image" content="https://diamonds.closer.click/og.jpg" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    background: radial-gradient(120% 100% at 50% 0%, #16233d 0%, #0b1220 60%);
+    color: #e2e8f0;
+  }
+
+  /* --- Barra superior --- */
+  .topbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    background: rgba(11,18,32,.6);
+    border-bottom: 1px solid rgba(148,163,184,.12);
+    padding-top: env(safe-area-inset-top);
+  }
+  .brand {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 12px;
+    min-width: 0;
+  }
+  .brand img { width: clamp(26px, 4vh, 34px); height: clamp(26px, 4vh, 34px); display: block; }
+  .brand span {
+    font-weight: 800;
+    letter-spacing: .04em;
+    font-size: clamp(15px, 2.3vh, 20px);
+    background: linear-gradient(90deg, #a5f3fc, #22d3ee);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .topbar button {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: clamp(11px, 1.9vh, 15px);
+    font-weight: 700;
+    padding: 1.4vh 12px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    cursor: pointer;
+  }
+  .topbar button:active { color: #e2e8f0; }
+  .topbar-coin { flex: 0 0 auto; display: flex; align-items: center; padding: 0 10px; }
+
+  /* --- Marcador --- */
+  .scores {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 2vw;
+    padding: 1.4vh 4vw .4vh;
+  }
+  .score {
+    flex: 1;
+    text-align: center;
+    background: rgba(148,163,184,.07);
+    border: 1px solid rgba(148,163,184,.12);
+    border-radius: 14px;
+    padding: 1vh .5vh;
+  }
+  .score .lbl {
+    font-size: clamp(10px, 1.5vh, 13px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: #64748b;
+  }
+  .score .val {
+    font-size: clamp(22px, 4.4vh, 38px);
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: #f1f5f9;
+  }
+  .score.best .val { color: #fcd34d; }
+
+  /* --- Tablero --- */
+  .board-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    padding: 1.2vh 3vw;
+  }
+  #board {
+    display: block;
+    touch-action: none;
+    border-radius: 16px;
+    background: rgba(8,13,24,.55);
+    box-shadow: inset 0 0 0 1px rgba(148,163,184,.1), 0 10px 30px rgba(0,0,0,.4);
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  /* --- Combo flotante --- */
+  .combo {
+    position: fixed;
+    left: 50%; top: 42%;
+    transform: translate(-50%,-50%) scale(.6);
+    font-size: clamp(28px, 9vw, 64px);
+    font-weight: 900;
+    letter-spacing: .02em;
+    color: #fde68a;
+    text-shadow: 0 2px 18px rgba(252,211,77,.55);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 5;
+  }
+  .combo.show { animation: comboPop .8s ease-out; }
+  @keyframes comboPop {
+    0%   { opacity: 0; transform: translate(-50%,-50%) scale(.5); }
+    25%  { opacity: 1; transform: translate(-50%,-50%) scale(1.15); }
+    70%  { opacity: 1; transform: translate(-50%,-60%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%,-80%) scale(.9); }
+  }
+
+  /* --- Barra inferior --- */
+  .control {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 3vw;
+    padding: 1vh 4vw;
+    padding-bottom: calc(1vh + env(safe-area-inset-bottom));
+  }
+  .control button {
+    flex: 1;
+    border: none;
+    border-radius: 14px;
+    background: rgba(148,163,184,.1);
+    color: #e2e8f0;
+    font-size: clamp(13px, 2vh, 17px);
+    font-weight: 700;
+    padding: 1.6vh 0;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    cursor: pointer;
+  }
+  .control button:active { background: rgba(148,163,184,.22); }
+  .control .primary {
+    background: linear-gradient(90deg, #0891b2, #06b6d4);
+    color: #06121b;
+  }
+  .control .primary:active { filter: brightness(1.1); }
+
+  /* --- Modal --- */
+  .modal {
+    position: fixed; inset: 0;
+    background: rgba(2,6,15,.82);
+    display: none; align-items: center; justify-content: center;
+    z-index: 10; padding: 5vh 6vw;
+  }
+  .modal.abierto { display: flex; }
+  .modal-caja {
+    background: #111c30;
+    border: 1px solid rgba(148,163,184,.16);
+    border-radius: 18px;
+    width: 100%; max-width: 380px;
+    padding: 26px 24px;
+    text-align: center;
+  }
+  .modal-caja h2 {
+    font-size: clamp(20px, 3.4vh, 28px);
+    font-weight: 800;
+    margin-bottom: 6px;
+    background: linear-gradient(90deg, #a5f3fc, #22d3ee);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .modal-caja p { color: #94a3b8; font-size: clamp(13px, 2vh, 16px); line-height: 1.5; }
+  .modal-caja .big {
+    font-size: clamp(34px, 7vh, 54px);
+    font-weight: 900; color: #fcd34d; margin: 12px 0 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .modal-caja button {
+    margin-top: 20px; width: 100%;
+    border: none; border-radius: 14px;
+    background: linear-gradient(90deg, #0891b2, #06b6d4);
+    color: #06121b; font-size: clamp(15px, 2.4vh, 19px); font-weight: 800;
+    padding: 14px 0; cursor: pointer; text-transform: uppercase; letter-spacing: .05em;
+  }
+  .modal-caja button:active { filter: brightness(1.1); }
+</style>
+<!-- Analítica cookieless autohosteada (GoatCounter); no cuenta en localhost/LAN. -->
+<script>window.goatcounter={path:function(p){return location.hostname+p}}</script>
+<script data-goatcounter="https://goat.closer.click/count" async src="https://goat.closer.click/count.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Diamonds",
+  "url": "https://diamonds.closer.click/",
+  "description": "Juego casual de combinar diamantes: alinea 3 o más del mismo color, encadena combos y supera tu récord.",
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "publisher": { "@type": "Organization", "name": "Closer Click", "url": "https://closer.click/" }
+}
+</script>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <img src="icon.svg" alt="" width="30" height="30">
+      <span>Diamonds</span>
+    </div>
+    <button id="btnInstalar" style="display:none">⬇ Instalar</button>
+    <closer-click-support class="topbar-coin" href="https://ko-fi.com/closerclick" repo="closerclick/diamonds" discord="https://discord.gg/D648uq7cth"></closer-click-support>
+  </div>
+
+  <div class="scores">
+    <div class="score">
+      <div class="lbl">Puntos</div>
+      <div class="val" id="score">0</div>
+    </div>
+    <div class="score">
+      <div class="lbl">Movimientos</div>
+      <div class="val" id="moves">30</div>
+    </div>
+    <div class="score best">
+      <div class="lbl">Récord</div>
+      <div class="val" id="best">0</div>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <canvas id="board"></canvas>
+  </div>
+
+  <div class="combo" id="combo"></div>
+
+  <div class="control">
+    <button id="btnNuevo">↺ Nuevo</button>
+    <button class="primary" id="btnRevolver">⤮ Rebarajar</button>
+  </div>
+
+  <div class="modal" id="modalFin">
+    <div class="modal-caja">
+      <h2>¡Fin de la partida!</h2>
+      <p>Tu puntuación</p>
+      <div class="big" id="finScore">0</div>
+      <p id="finMsg"></p>
+      <button id="btnJugar">Jugar de nuevo</button>
+    </div>
+  </div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  // --- Configuración del juego ---
+  const N = 8;                 // tablero N×N
+  const TIPOS = 6;             // colores de gema
+  const MOVS_INI = 30;         // movimientos por partida
+  const PT_GEMA = 10;          // puntos por gema eliminada
+  const BEST_KEY = 'diamonds_best';
+
+  // Paleta de gemas (color claro arriba, oscuro abajo => aspecto de gema)
+  const COLORES = [
+    ['#fda4af', '#e11d48'], // rosa/rojo
+    ['#fdba74', '#ea580c'], // naranja
+    ['#fde047', '#ca8a04'], // amarillo
+    ['#86efac', '#16a34a'], // verde
+    ['#7dd3fc', '#0284c7'], // azul
+    ['#d8b4fe', '#9333ea']  // violeta
+  ];
+
+  // --- Estado ---
+  const cv = $('board');
+  const ctx = cv.getContext('2d');
+  let cell = 48;              // tamaño de celda en px (se recalcula al medir)
+  let dpr = 1;
+
+  let grid = [];             // grid[r][c] = { tipo, dr, dc, scale }  (dr/dc: pos de dibujo animada)
+  let estado = 'idle';       // 'idle' | 'busy'
+  let sel = null;            // {r,c} gema seleccionada
+  let score = 0, movs = MOVS_INI;
+  let best = Number(localStorage.getItem(BEST_KEY) || 0);
+  let tweens = [];           // animaciones activas
+
+  // --- Tweens (animación por interpolación) ---
+  function tween(obj, props, dur, ease) {
+    const from = {}; for (const k in props) from[k] = obj[k];
+    return new Promise(res => {
+      tweens.push({ obj, props, from, dur, t: 0, ease: ease || easeOutQuad, done: res });
+    });
+  }
+  function easeOutQuad(t) { return 1 - (1 - t) * (1 - t); }
+  function easeInQuad(t) { return t * t; }
+  function easeOutBack(t) { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); }
+
+  let lastTs = 0;
+  function loop(ts) {
+    const dt = lastTs ? (ts - lastTs) : 16;
+    lastTs = ts;
+    for (let i = tweens.length - 1; i >= 0; i--) {
+      const tw = tweens[i];
+      tw.t += dt;
+      let k = Math.min(1, tw.t / tw.dur);
+      const e = tw.ease(k);
+      for (const p in tw.props) tw.obj[p] = tw.from[p] + (tw.props[p] - tw.from[p]) * e;
+      if (k >= 1) { tweens.splice(i, 1); tw.done(); }
+    }
+    dibujar();
+    requestAnimationFrame(loop);
+  }
+
+  // --- Dimensionado responsivo ---
+  function medir() {
+    const wrap = cv.parentElement;
+    const rect = wrap.getBoundingClientRect();
+    const lado = Math.floor(Math.min(rect.width, rect.height));
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.style.width = lado + 'px';
+    cv.style.height = lado + 'px';
+    cv.width = Math.floor(lado * dpr);
+    cv.height = Math.floor(lado * dpr);
+    cell = (lado * dpr) / N;
+  }
+
+  // --- Dibujo ---
+  function dibujar() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    // tablero (cuadrícula sutil)
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if ((r + c) % 2 === 0) {
+        ctx.fillStyle = 'rgba(148,163,184,.04)';
+        ctx.fillRect(c * cell, r * cell, cell, cell);
+      }
+    }
+    // gemas
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const g = grid[r][c];
+      if (!g || g.tipo < 0) continue;
+      dibujarGema(g.dc, g.dr, g.tipo, g.scale, sel && sel.r === r && sel.c === c);
+    }
+  }
+
+  function dibujarGema(dc, dr, tipo, scale, seleccionada) {
+    const cx = (dc + 0.5) * cell;
+    const cy = (dr + 0.5) * cell;
+    const half = cell * 0.40 * scale;     // semidiagonal del rombo
+    const [c1, c2] = COLORES[tipo];
+
+    if (seleccionada) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,.10)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, cell * 0.46, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // rombo (diamante) con degradado vertical
+    const grad = ctx.createLinearGradient(cx, cy - half, cx, cy + half);
+    grad.addColorStop(0, c1);
+    grad.addColorStop(1, c2);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - half);
+    ctx.lineTo(cx + half, cy);
+    ctx.lineTo(cx, cy + half);
+    ctx.lineTo(cx - half, cy);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // faceta central (línea de brillo)
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - half);
+    ctx.lineTo(cx + half * 0.5, cy);
+    ctx.lineTo(cx, cy + half);
+    ctx.lineTo(cx - half * 0.5, cy);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,.16)';
+    ctx.fill();
+
+    // destello superior
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - half);
+    ctx.lineTo(cx + half * 0.35, cy - half * 0.32);
+    ctx.lineTo(cx - half * 0.35, cy - half * 0.32);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,.45)';
+    ctx.fill();
+
+    // borde
+    ctx.lineWidth = Math.max(1, cell * 0.02);
+    ctx.strokeStyle = 'rgba(0,0,0,.18)';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - half);
+    ctx.lineTo(cx + half, cy);
+    ctx.lineTo(cx, cy + half);
+    ctx.lineTo(cx - half, cy);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  // --- Lógica del tablero ---
+  function nuevaGema(r, c, tipo) {
+    return { tipo, dr: r, dc: c, scale: 1 };
+  }
+  function tipoRandom() { return Math.floor(Math.random() * TIPOS); }
+
+  // Genera un tablero sin combinaciones iniciales y con al menos un movimiento.
+  function generar() {
+    do {
+      grid = [];
+      for (let r = 0; r < N; r++) {
+        const fila = [];
+        for (let c = 0; c < N; c++) {
+          let t;
+          do { t = tipoRandom(); }
+          while (
+            (c >= 2 && fila[c-1].tipo === t && fila[c-2].tipo === t) ||
+            (r >= 2 && grid[r-1][c].tipo === t && grid[r-2][c].tipo === t)
+          );
+          fila.push(nuevaGema(r, c, t));
+        }
+        grid.push(fila);
+      }
+    } while (!hayMovimientos());
+  }
+
+  // Devuelve el conjunto de celdas que forman parte de alguna línea de 3+.
+  function encontrarMatches() {
+    const marcadas = new Set();
+    // horizontales
+    for (let r = 0; r < N; r++) {
+      let run = 1;
+      for (let c = 1; c <= N; c++) {
+        const igual = c < N && grid[r][c].tipo === grid[r][c-1].tipo && grid[r][c].tipo >= 0;
+        if (igual) { run++; }
+        else { if (run >= 3) for (let k = c - run; k < c; k++) marcadas.add(r * N + k); run = 1; }
+      }
+    }
+    // verticales
+    for (let c = 0; c < N; c++) {
+      let run = 1;
+      for (let r = 1; r <= N; r++) {
+        const igual = r < N && grid[r][c].tipo === grid[r-1][c].tipo && grid[r][c].tipo >= 0;
+        if (igual) { run++; }
+        else { if (run >= 3) for (let k = r - run; k < r; k++) marcadas.add(k * N + c); run = 1; }
+      }
+    }
+    return marcadas;
+  }
+
+  // ¿Existe algún intercambio que genere una combinación?
+  function hayMovimientos() {
+    const swapTest = (r1, c1, r2, c2) => {
+      const a = grid[r1][c1].tipo, b = grid[r2][c2].tipo;
+      grid[r1][c1].tipo = b; grid[r2][c2].tipo = a;
+      const hay = encontrarMatches().size > 0;
+      grid[r1][c1].tipo = a; grid[r2][c2].tipo = b;
+      return hay;
+    };
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (c < N - 1 && swapTest(r, c, r, c + 1)) return true;
+      if (r < N - 1 && swapTest(r, c, r + 1, c)) return true;
+    }
+    return false;
+  }
+
+  // --- Interacción ---
+  function celdaDesdeEvento(e) {
+    const rect = cv.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width * N;
+    const y = (e.clientY - rect.top) / rect.height * N;
+    const c = Math.floor(x), r = Math.floor(y);
+    if (r < 0 || r >= N || c < 0 || c >= N) return null;
+    return { r, c };
+  }
+  const adyacentes = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
+
+  let downCell = null;
+  cv.addEventListener('pointerdown', e => {
+    if (estado !== 'idle') return;
+    e.preventDefault();
+    downCell = celdaDesdeEvento(e);
+    if (!downCell) return;
+    if (sel && adyacentes(sel, downCell)) { intentarSwap(sel, downCell); sel = null; }
+    else { sel = downCell; }
+  });
+  cv.addEventListener('pointermove', e => {
+    if (estado !== 'idle' || !downCell) return;
+    const cur = celdaDesdeEvento(e);
+    if (cur && adyacentes(downCell, cur)) {
+      const a = downCell; downCell = null; sel = null;
+      intentarSwap(a, cur);
+    }
+  });
+  cv.addEventListener('pointerup', () => { downCell = null; });
+  cv.addEventListener('pointercancel', () => { downCell = null; });
+
+  async function intentarSwap(a, b) {
+    estado = 'busy';
+    beep(440, 0.05, 0.15);
+    await animarSwap(a, b);
+    intercambiar(a, b);
+    const matches = encontrarMatches();
+    if (matches.size === 0) {
+      // sin combinación: revertir
+      await animarSwap(a, b);
+      intercambiar(a, b);
+      vibrar(30);
+      estado = 'idle';
+      return;
+    }
+    movs--;
+    actualizarHUD();
+    await resolver(matches, 1);
+    // garantizar que siga habiendo jugadas
+    if (!hayMovimientos()) await rebarajar();
+    estado = 'idle';
+    if (movs <= 0) finPartida();
+  }
+
+  function animarSwap(a, b) {
+    const ga = grid[a.r][a.c], gb = grid[b.r][b.c];
+    return Promise.all([
+      tween(ga, { dr: b.r, dc: b.c }, 140),
+      tween(gb, { dr: a.r, dc: a.c }, 140)
+    ]);
+  }
+
+  // Intercambia el contenido lógico de dos celdas y normaliza pos de dibujo.
+  function intercambiar(a, b) {
+    const tmp = grid[a.r][a.c];
+    grid[a.r][a.c] = grid[b.r][b.c];
+    grid[b.r][b.c] = tmp;
+    grid[a.r][a.c].dr = a.r; grid[a.r][a.c].dc = a.c;
+    grid[b.r][b.c].dr = b.r; grid[b.r][b.c].dc = b.c;
+  }
+
+  // Resuelve cascadas recursivamente; `combo` es el multiplicador de cadena.
+  async function resolver(matches, combo) {
+    // puntuar y reventar
+    const ganado = matches.size * PT_GEMA * combo;
+    score += ganado;
+    if (combo >= 2) mostrarCombo(combo);
+    actualizarHUD();
+    beep(520 + combo * 80, 0.12, 0.3);
+    vibrar(combo > 1 ? [30, 30, 40] : 40);
+
+    const explosiones = [];
+    matches.forEach(idx => {
+      const r = Math.floor(idx / N), c = idx % N;
+      explosiones.push(tween(grid[r][c], { scale: 0 }, 160, easeInQuad));
+    });
+    await Promise.all(explosiones);
+    matches.forEach(idx => { grid[Math.floor(idx / N)][idx % N] = null; });
+
+    await colapsar();
+
+    const siguientes = encontrarMatches();
+    if (siguientes.size > 0) await resolver(siguientes, combo + 1);
+  }
+
+  // Hace caer las gemas y rellena los huecos por arriba.
+  async function colapsar() {
+    const caidas = [];
+    for (let c = 0; c < N; c++) {
+      // compactar hacia abajo
+      let escribir = N - 1;
+      for (let r = N - 1; r >= 0; r--) {
+        if (grid[r][c]) {
+          if (escribir !== r) {
+            grid[escribir][c] = grid[r][c];
+            grid[r][c] = null;
+            caidas.push(tween(grid[escribir][c], { dr: escribir }, 220, easeOutQuad));
+          }
+          escribir--;
+        }
+      }
+      // rellenar arriba con gemas nuevas que entran desde fuera
+      for (let r = escribir; r >= 0; r--) {
+        const g = nuevaGema(r, c, tipoRandom());
+        g.dr = r - (escribir + 1);   // arranca por encima del tablero
+        grid[r][c] = g;
+        caidas.push(tween(g, { dr: r }, 260, easeOutQuad));
+      }
+    }
+    await Promise.all(caidas);
+  }
+
+  async function rebarajar() {
+    estado = 'busy';
+    const desv = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
+      if (grid[r][c]) desv.push(tween(grid[r][c], { scale: 0 }, 160, easeInQuad));
+    await Promise.all(desv);
+    generar();
+    const ap = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      grid[r][c].scale = 0;
+      ap.push(tween(grid[r][c], { scale: 1 }, 220, easeOutBack));
+    }
+    await Promise.all(ap);
+  }
+
+  // --- Combo flotante ---
+  function mostrarCombo(n) {
+    const el = $('combo');
+    el.textContent = '¡Combo ×' + n + '!';
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  }
+
+  // --- HUD ---
+  function actualizarHUD() {
+    $('score').textContent = score;
+    $('moves').textContent = Math.max(0, movs);
+    if (score > best) { best = score; localStorage.setItem(BEST_KEY, best); }
+    $('best').textContent = best;
+  }
+
+  function finPartida() {
+    $('finScore').textContent = score;
+    $('finMsg').textContent = score >= best && score > 0 ? '¡Nuevo récord! 💎' : 'Récord: ' + best;
+    $('modalFin').classList.add('abierto');
+    avisoFin();
+  }
+
+  function nuevaPartida() {
+    $('modalFin').classList.remove('abierto');
+    score = 0; movs = MOVS_INI; sel = null; estado = 'idle';
+    generar();
+    actualizarHUD();
+  }
+
+  // --- Audio (WebAudio, sin archivos) ---
+  let actx = null;
+  function beep(freq = 880, dur = 0.12, vol = 0.4) {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'triangle'; o.frequency.value = freq;
+      g.gain.setValueAtTime(vol, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+      o.connect(g); g.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime + dur);
+    } catch {}
+  }
+  function avisoFin() {
+    beep(660, 0.18); setTimeout(() => beep(880, 0.18), 180); setTimeout(() => beep(1175, 0.32), 380);
+  }
+  function vibrar(p) { if (navigator.vibrate) navigator.vibrate(p); }
+
+  // --- Eventos UI ---
+  $('btnNuevo').addEventListener('click', () => { if (estado === 'idle') nuevaPartida(); });
+  $('btnJugar').addEventListener('click', nuevaPartida);
+  $('btnRevolver').addEventListener('click', async () => {
+    if (estado !== 'idle' || movs <= 0) return;
+    movs = Math.max(0, movs - 1);   // rebarajar manual cuesta un movimiento
+    actualizarHUD();
+    await rebarajar();
+    estado = 'idle';
+    if (movs <= 0) finPartida();
+  });
+
+  window.addEventListener('resize', () => { medir(); });
+
+  // --- Arranque ---
+  medir();
+  generar();
+  actualizarHUD();
+  requestAnimationFrame(loop);
+
+  // --- PWA: service worker + botón Instalar ---
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+  let deferredPrompt = null;
+  const btnInstalar = $('btnInstalar');
+  const yaInstalada = () =>
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+  if (!yaInstalada()) {
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault(); deferredPrompt = e; btnInstalar.style.display = '';
+    });
+  }
+  btnInstalar.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null; btnInstalar.style.display = 'none';
+  });
+  window.addEventListener('appinstalled', () => {
+    btnInstalar.style.display = 'none'; deferredPrompt = null;
+  });
+</script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@closerclick/closer-click-support@0.3/src/index.js"></script>
+</body>
+</html>
