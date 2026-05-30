@@ -1380,52 +1380,177 @@
 
   function irAlMapa() { $('modalFin').classList.remove('abierto'); mostrarVista('mapa'); renderMapa(); }
 
+  // --- Mapa navegable (pan) ---
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  let mapOff = { x: 0, y: 0 };
+  let mapDim = { w: 0, h: 0, vw: 0, vh: 0 };
+  let mapStops = [];
+  let mapActualXY = null;
+  let mapPanInit = false;
+
+  function stopXY(o, centerX, amp) {
+    return { x: centerX + amp * Math.sin(o * 0.7), y: 90 + o * 118 };
+  }
+
   function renderMapa() {
-    const cont = $('mapaMundos');
-    cont.innerHTML = '';
+    const vp = $('mapaVp'), lienzo = $('mapaMundo'), svg = $('mapaSvg');
+    mapDim.vw = vp.clientWidth || window.innerWidth;
+    mapDim.vh = vp.clientHeight || (window.innerHeight - 120);
+    const centerX = Math.max(mapDim.vw, 320) / 2;
+    const amp = Math.min(centerX - 60, 120);
+
+    Array.from(lienzo.querySelectorAll('.nivel-nodo,.portal')).forEach(e => e.remove());
+    mapStops = [];
+
+    const tot = estrellasTotales();
     const maxW = mundoDeNivel(prog.max) + 1;
+
     for (let w = 1; w <= maxW; w++) {
-      const info = infoMundo(w);
-      const sec = document.createElement('section');
-      sec.className = 'mundo'; sec.style.setProperty('--tint', info.tint);
-      const head = document.createElement('div');
-      head.className = 'mundo-head';
-      const tot = estrellasTotales();
-      const rm = reqMundo(w);
-      const candado = (w > 1 && tot < rm)
-        ? '<span class="mundo-lock">🔒 ★ ' + tot + '/' + rm + '</span>' : '';
-      head.innerHTML = '<span class="mundo-num">Mundo ' + w + '</span>' +
-        '<span class="mundo-nombre">' + info.nombre + '</span>' +
-        '<span class="mundo-feat">' + info.feat + '</span>' + candado;
-      sec.appendChild(head);
-      const path = document.createElement('div');
-      path.className = 'sendero';
+      if (w > 1) {
+        const rm = reqMundo(w);
+        mapStops.push({ type: 'portal', w, abierto: tot >= rm, req: rm, tot });
+      }
       for (let k = 1; k <= NIVELES_POR_MUNDO; k++) {
         const n = (w - 1) * NIVELES_POR_MUNDO + k;
-        const porProg = n <= prog.max;
         const req = reqNivel(n);
-        const faltanEstrellas = tot < req;
-        const unlocked = porProg && !faltanEstrellas;
-        const stars = prog.stars[n] || 0;
-        const nodo = document.createElement('button');
-        nodo.className = 'nivel-nodo' + (unlocked ? '' : ' bloq') +
-          (n === prog.max && unlocked ? ' actual' : '') + (req > 0 ? ' puerta' : '');
-        if (unlocked) {
-          nodo.innerHTML = '<span class="nn">' + k + '</span><span class="ne">' +
-            '★'.repeat(stars) + '☆'.repeat(3 - stars) + '</span>';
-          nodo.addEventListener('click', () => iniciarNivel(n));
-        } else if (porProg && faltanEstrellas) {
-          // desbloqueado por progresión pero falta juntar estrellas
-          nodo.innerHTML = '<span class="nn">🔒</span><span class="ne">★ ' + tot + '/' + req + '</span>';
-        } else {
-          nodo.innerHTML = '🔒';
-        }
-        path.appendChild(nodo);
+        const unlocked = n <= prog.max && tot >= req;
+        mapStops.push({ type: 'level', w, k, n, req, unlocked, esActual: n === prog.max });
       }
-      sec.appendChild(path);
-      cont.appendChild(sec);
     }
-    requestAnimationFrame(() => { const a = cont.querySelector('.actual'); if (a) a.scrollIntoView({ block: 'center' }); });
+
+    mapStops.forEach((s, o) => { const p = stopXY(o, centerX, amp); s.x = p.x; s.y = p.y; });
+    mapDim.w = Math.max(mapDim.vw, 320);
+    mapDim.h = (mapStops.length ? mapStops[mapStops.length - 1].y : 0) + 140;
+    lienzo.style.width = mapDim.w + 'px';
+    lienzo.style.height = mapDim.h + 'px';
+
+    svg.setAttribute('width', mapDim.w);
+    svg.setAttribute('height', mapDim.h);
+    svg.innerHTML = '';
+    for (let i = 1; i < mapStops.length; i++) {
+      const a = mapStops[i - 1], b = mapStops[i];
+      const d = 'M ' + a.x + ' ' + a.y + ' C ' + a.x + ' ' + ((a.y + b.y) / 2) + ', ' + b.x + ' ' + ((a.y + b.y) / 2) + ', ' + b.x + ' ' + b.y;
+      const tint = infoMundo(b.w).tint;
+      const seg = document.createElementNS(SVGNS, 'path');
+      seg.setAttribute('d', d);
+      seg.setAttribute('fill', 'none');
+      const on = (b.type === 'level' ? b.unlocked : b.abierto);
+      seg.setAttribute('stroke', on ? tint : 'rgba(148,163,184,.25)');
+      seg.setAttribute('stroke-width', on ? '7' : '5');
+      seg.setAttribute('stroke-linecap', 'round');
+      seg.setAttribute('stroke-dasharray', on ? 'none' : '2 12');
+      seg.setAttribute('opacity', on ? '0.55' : '0.5');
+      svg.appendChild(seg);
+    }
+
+    mapActualXY = null;
+    mapStops.forEach(s => {
+      const tint = infoMundo(s.w).tint;
+      if (s.type === 'portal') {
+        const el = document.createElement('button');
+        el.className = 'portal' + (s.abierto ? '' : ' bloq');
+        el.style.setProperty('--tint', tint);
+        el.style.left = s.x + 'px'; el.style.top = s.y + 'px';
+        const info = infoMundo(s.w);
+        if (s.abierto) {
+          el.innerHTML = '<span class="pn">Portal</span><span class="pw">' + info.nombre + '</span>';
+          el.addEventListener('click', () => { if (!panHaArrastrado()) iniciarNivel((s.w - 1) * NIVELES_POR_MUNDO + 1); });
+        } else {
+          el.innerHTML = '<span class="pn">Portal</span><span class="plock">🔒 ★' + s.tot + '/' + s.req + '</span>';
+        }
+        lienzo.appendChild(el);
+      } else {
+        const stars = prog.stars[s.n] || 0;
+        const el = document.createElement('button');
+        el.className = 'nivel-nodo' + (s.unlocked ? '' : ' bloq') + (s.esActual && s.unlocked ? ' actual' : '');
+        el.style.setProperty('--tint', tint);
+        el.style.left = s.x + 'px'; el.style.top = s.y + 'px';
+        if (s.unlocked) {
+          el.innerHTML = '<span class="nn">' + s.k + '</span><span class="ne">' + '★'.repeat(stars) + '☆'.repeat(3 - stars) + '</span>';
+          el.addEventListener('click', () => { if (!panHaArrastrado()) iniciarNivel(s.n); });
+        } else if (s.n <= prog.max) {
+          el.innerHTML = '<span class="nn">🔒</span><span class="ne">★ ' + tot + '/' + s.req + '</span>';
+        } else {
+          el.innerHTML = '🔒';
+        }
+        lienzo.appendChild(el);
+        if (s.esActual) mapActualXY = { x: s.x, y: s.y };
+      }
+    });
+
+    if (!mapActualXY && mapStops.length) mapActualXY = { x: mapStops[0].x, y: mapStops[0].y };
+
+    initMapaPan();
+    centrarEn(mapActualXY, false);
+    actualizarMapaHud();
+  }
+
+  // ---- Pan ----
+  let panStart = null, panBase = null, panMoved = false;
+  const panHaArrastrado = () => panMoved;
+
+  function clampOff() {
+    const minX = Math.min(0, mapDim.vw - mapDim.w), maxX = 0;
+    const minY = Math.min(0, mapDim.vh - mapDim.h), maxY = 0;
+    if (mapDim.w <= mapDim.vw) mapOff.x = (mapDim.vw - mapDim.w) / 2;
+    else mapOff.x = Math.max(minX, Math.min(maxX, mapOff.x));
+    mapOff.y = Math.max(minY, Math.min(maxY, mapOff.y));
+  }
+  function aplicarPan() {
+    clampOff();
+    $('mapaMundo').style.transform = 'translate(' + mapOff.x + 'px,' + mapOff.y + 'px)';
+  }
+  function centrarEn(xy, suave) {
+    if (!xy) return;
+    mapOff.x = mapDim.vw / 2 - xy.x;
+    mapOff.y = mapDim.vh / 2 - xy.y;
+    const lienzo = $('mapaMundo');
+    lienzo.style.transition = suave ? 'transform .35s ease' : 'none';
+    aplicarPan();
+    if (suave) setTimeout(() => { lienzo.style.transition = 'none'; }, 360);
+  }
+  function actualizarMapaHud() {
+    const cy = -mapOff.y + mapDim.vh / 2;
+    let best = mapStops[0], bd = Infinity;
+    for (const s of mapStops) { const d = Math.abs(s.y - cy); if (d < bd) { bd = d; best = s; } }
+    if (!best) return;
+    const info = infoMundo(best.w), tot = estrellasTotales();
+    const hud = $('mapaHud');
+    hud.style.setProperty('--tint', info.tint);
+    hud.innerHTML =
+      '<div><div class="mh-num">Mundo ' + best.w + '</div>' +
+      '<div class="mh-nombre">' + info.nombre + '</div>' +
+      '<div class="mh-feat">' + info.feat + '</div></div>' +
+      '<div class="mh-stars">★ ' + tot + '</div>';
+  }
+
+  function initMapaPan() {
+    if (mapPanInit) return;
+    mapPanInit = true;
+    const vp = $('mapaVp');
+    vp.addEventListener('pointerdown', e => {
+      panStart = { x: e.clientX, y: e.clientY };
+      panBase = { x: mapOff.x, y: mapOff.y };
+      panMoved = false;
+      vp.classList.add('dragging');
+      $('mapaMundo').style.transition = 'none';
+      try { vp.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+    vp.addEventListener('pointermove', e => {
+      if (!panStart) return;
+      const dx = e.clientX - panStart.x, dy = e.clientY - panStart.y;
+      if (Math.abs(dx) + Math.abs(dy) > 7) {
+        panMoved = true;
+        const h = $('mapaHint'); if (h) h.style.opacity = '0';
+      }
+      mapOff.x = panBase.x + dx; mapOff.y = panBase.y + dy;
+      aplicarPan();
+      actualizarMapaHud();
+    });
+    const fin = () => { panStart = null; vp.classList.remove('dragging'); };
+    vp.addEventListener('pointerup', fin);
+    vp.addEventListener('pointercancel', fin);
+    $('mapaRecenter').addEventListener('click', () => centrarEn(mapActualXY, true));
   }
 
   /* ===================== HUD ===================== */
