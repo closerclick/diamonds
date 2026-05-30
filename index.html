@@ -337,6 +337,26 @@
     background: rgba(148,163,184,.14); color: #e2e8f0;
   }
   .modal-caja button:active { filter: brightness(1.1); }
+
+  /* --- Glosario / Guia --- */
+  .modal.glos { align-items: stretch; justify-content: center; padding: 0; }
+  .glos-caja { background: #0e1726; width: 100%; max-width: 560px; display: flex; flex-direction: column; max-height: 100%; }
+  .glos-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: calc(env(safe-area-inset-top) + 14px) 18px 12px; border-bottom: 1px solid rgba(148,163,184,.14); background: rgba(11,18,32,.9); }
+  .glos-head h2 { font-size: clamp(18px, 3vh, 24px); font-weight: 800; background: linear-gradient(90deg, #a5f3fc, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .glos-cerrar { border: none; background: rgba(148,163,184,.14); color: #e2e8f0; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+  .glos-cerrar:active { background: rgba(148,163,184,.28); }
+  .glos-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 16px calc(env(safe-area-inset-bottom) + 24px); }
+  .glos-sec { margin-top: 18px; }
+  .glos-sec:first-child { margin-top: 4px; }
+  .glos-sec > h3 { font-size: clamp(13px, 2vh, 16px); font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #22d3ee; margin-bottom: 8px; }
+  .glos-item { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(148,163,184,.08); }
+  .glos-item:last-child { border-bottom: none; }
+  .glos-ic { flex: 0 0 auto; width: 46px; height: 46px; display: block; }
+  .glos-ic.wide { width: 76px; }
+  .glos-tx { min-width: 0; }
+  .glos-tx b { display: block; font-size: clamp(14px, 2vh, 16px); color: #f1f5f9; }
+  .glos-tx span { font-size: clamp(12px, 1.7vh, 14px); color: #94a3b8; line-height: 1.4; }
+  .glos-tx .how { color: #fcd34d; }
 </style>
 <!-- Analítica cookieless autohosteada (GoatCounter); no cuenta en localhost/LAN. -->
 <script>window.goatcounter={path:function(p){return location.hostname+p}}</script>
@@ -363,6 +383,7 @@
       <span>Diamonds</span>
     </div>
     <button id="btnMapaTop" style="display:none">← Mapa</button>
+    <button id="btnGlosario">❔ Guía</button>
     <button id="btnInstalar" style="display:none">⬇ Instalar</button>
     <closer-click-support class="topbar-coin" href="https://ko-fi.com/closerclick" repo="closerclick/diamonds" discord="https://discord.gg/D648uq7cth"></closer-click-support>
   </div>
@@ -406,6 +427,17 @@
 
     <div class="control">
       <button id="btnMapa2">← Mapa</button>
+    </div>
+  </div>
+
+  <!-- ============ GLOSARIO ============ -->
+  <div class="modal glos" id="modalGlosario">
+    <div class="glos-caja">
+      <div class="glos-head">
+        <h2>Guía del juego</h2>
+        <button class="glos-cerrar" id="btnGlosCerrar">✕</button>
+      </div>
+      <div class="glos-body" id="glosBody"></div>
     </div>
   </div>
 
@@ -1376,6 +1408,7 @@
     $('vistaMapa').classList.toggle('activa', v === 'mapa');
     $('vistaJuego').classList.toggle('activa', v === 'juego');
     $('btnMapaTop').style.display = v === 'juego' ? '' : 'none';
+    $('btnGlosario').style.display = v === 'mapa' ? '' : 'none';
   }
 
   function irAlMapa() { $('modalFin').classList.remove('abierto'); mostrarVista('mapa'); renderMapa(); }
@@ -1553,6 +1586,104 @@
     $('mapaRecenter').addEventListener('click', () => centrarEn(mapActualXY, true));
   }
 
+  /* ===================== Glosario / Guía ===================== */
+  // Icono SVG de un diamante (con poder/dureza opcionales), estilo del juego.
+  function svgGema(opts) {
+    const o = opts || {};
+    const col = o.col || ['#7dd3fc', '#0284c7'];
+    const wide = o.wide;
+    const W = wide ? 76 : 46, cells = wide ? [18, 58] : [23];
+    const id = 'g' + Math.round(Math.random() * 1e6);
+    let defs = '', body = '';
+    cells.forEach((cx, i) => {
+      const gid = id + '_' + i;
+      const c = o.cols && o.cols[i] ? o.cols[i] : col;
+      defs += `<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c[0]}"/><stop offset="1" stop-color="${c[1]}"/></linearGradient>`;
+      const cy = 23, h = 17;
+      if (o.hard) {
+        const tono = o.hard >= 3 ? '#57534e' : '#78716c';
+        body += `<rect x="${cx - 19}" y="${cy - 19}" width="38" height="38" rx="7" fill="${tono}" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>`;
+      }
+      body += `<polygon points="${cx},${cy - h} ${cx + h},${cy} ${cx},${cy + h} ${cx - h},${cy}" fill="url(#${gid})" stroke="rgba(0,0,0,.2)" stroke-width="1.5"/>`;
+      body += `<polygon points="${cx},${cy - h} ${cx + h * 0.35},${cy - h * 0.3} ${cx - h * 0.35},${cy - h * 0.3}" fill="rgba(255,255,255,.5)"/>`;
+      const gl = (Array.isArray(o.glyph) ? o.glyph[i] : o.glyph);
+      body += glifoPoder(gl, cx, cy, h);
+      if (o.hard) for (let k = 0; k < o.hard; k++) body += `<circle cx="${cx + 11 - k * 5}" cy="${cy - 11}" r="2" fill="#fde68a"/>`;
+    });
+    return `<svg class="glos-ic${wide ? ' wide' : ''}" viewBox="0 0 ${W} 46" xmlns="http://www.w3.org/2000/svg"><defs>${defs}</defs>${body}</svg>`;
+  }
+  function glifoPoder(g, cx, cy, h) {
+    if (g === 'rayoH') return `<rect x="${cx - h * 0.8}" y="${cy - h * 0.28}" width="${h * 1.6}" height="${h * 0.16}" fill="#fff"/><rect x="${cx - h * 0.8}" y="${cy + h * 0.12}" width="${h * 1.6}" height="${h * 0.16}" fill="#fff"/>`;
+    if (g === 'rayoV') return `<rect x="${cx - h * 0.28}" y="${cy - h * 0.8}" width="${h * 0.16}" height="${h * 1.6}" fill="#fff"/><rect x="${cx + h * 0.12}" y="${cy - h * 0.8}" width="${h * 0.16}" height="${h * 1.6}" fill="#fff"/>`;
+    if (g === 'bomba') return `<circle cx="${cx}" cy="${cy}" r="${h * 0.5}" fill="rgba(2,6,15,.55)" stroke="#fde68a" stroke-width="2"/>`;
+    if (g === 'estrella') { let p = ''; for (let i = 0; i < 8; i++) { const a = Math.PI / 4 * i - Math.PI / 2; const r = i % 2 === 0 ? h * 0.75 : h * 0.28; p += (i ? 'L' : 'M') + (cx + Math.cos(a) * r) + ',' + (cy + Math.sin(a) * r); } return `<path d="${p}Z" fill="#fff"/>`; }
+    if (g === 'cometa') { let s = `<circle cx="${cx}" cy="${cy}" r="${h * 0.24}" fill="#fff"/>`; for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + k * Math.PI / 2; s += `<line x1="${cx}" y1="${cy}" x2="${cx + Math.cos(a) * h * 0.8}" y2="${cy + Math.sin(a) * h * 0.8}" stroke="#fff" stroke-width="2"/>`; } return s; }
+    return '';
+  }
+  // Mini-diagrama del área afectada en una grilla pequeña.
+  function svgGrid(cells, accent) {
+    const n = 5, s = 9, pad = 2, W = n * s + pad * 2;
+    let r = '';
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const on = cells.some(c => c[0] === x && c[1] === y);
+      r += `<rect x="${pad + x * s}" y="${pad + y * s}" width="${s - 1.5}" height="${s - 1.5}" rx="1.5" fill="${on ? accent : 'rgba(148,163,184,.14)'}"/>`;
+    }
+    return `<svg class="glos-ic" viewBox="0 0 ${W} ${W}" xmlns="http://www.w3.org/2000/svg">${r}</svg>`;
+  }
+  const filaG = y => { const a = []; for (let x = 0; x < 5; x++) a.push([x, y]); return a; };
+  const colG = x => { const a = []; for (let y = 0; y < 5; y++) a.push([x, y]); return a; };
+  const cruzG = () => filaG(2).concat(colG(2));
+  const areaG = (cx, cy, rad) => { const a = []; for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) if (Math.abs(x - cx) <= rad && Math.abs(y - cy) <= rad) a.push([x, y]); return a; };
+  const todoG = () => areaG(2, 2, 4);
+
+  const PAL = COLORES;
+  function item(ic, titulo, desc, how) {
+    return '<div class="glos-item">' + ic + '<div class="glos-tx"><b>' + titulo + '</b><span>' + desc +
+      (how ? ' <span class="how">' + how + '</span>' : '') + '</span></div></div>';
+  }
+
+  function construirGlosario() {
+    const A = '#22d3ee';
+    let h = '';
+
+    h += '<div class="glos-sec"><h3>Cómo jugar</h3>';
+    h += item(svgGema({ col: PAL[4] }), 'Combina', 'Toca una gema y una vecina (o desliza) para intercambiarlas.', 'Alinea 3 o más del mismo color para romperlas.');
+    h += item(svgGrid([[0,2],[1,2],[2,2],[3,2]], A), 'Cascadas', 'Al caer pueden formarse nuevas líneas.', 'Cada reacción en cadena multiplica los puntos (¡combo!).');
+    h += item(svgGema({ col: PAL[2], glyph: 'estrella' }), 'Objetivo del nivel', 'Meta de puntos, o romper todos los diamantes objetivo.', 'Lo ves arriba en el marcador.');
+    h += '<div class="glos-item"><svg class="glos-ic" viewBox="0 0 46 46"><text x="23" y="32" font-size="30" text-anchor="middle">⭐</text></svg><div class="glos-tx"><b>Estrellas</b><span>1 a 3 según lo holgado que ganes. <span class="how">Abren mundos y portales en el mapa.</span></span></div></div>';
+    h += '</div>';
+
+    h += '<div class="glos-sec"><h3>Diamantes</h3>';
+    h += item(svgGema({ col: PAL[0], hard: 2 }), 'Diamante duro', 'Necesita 2 golpes para romperse (muestra grietas).', 'Combínalo dos veces.');
+    h += item(svgGema({ col: PAL[5], hard: 3 }), 'Diamante reforzado', 'Aguanta 3 golpes. Aparece en mundos avanzados.', '');
+    h += '</div>';
+
+    h += '<div class="glos-sec"><h3>Power-ups (se crean al combinar)</h3>';
+    h += item(svgGema({ col: PAL[4], glyph: 'rayoH' }), 'Rayo', 'Se crea con 4 en línea.', 'Al activarlo limpia toda la fila o la columna.');
+    h += item(svgGema({ col: PAL[3], glyph: 'bomba' }), 'Bomba', 'Se crea con una forma de L o T.', 'Estalla en un área de 3×3.');
+    h += item(svgGema({ glyph: 'estrella', col: ['#f8fafc', '#cbd5e1'] }), 'Estrella', 'Se crea con 5 en línea.', 'Elimina todos los diamantes de un color.');
+    h += item(svgGema({ col: PAL[1], glyph: 'cometa' }), 'Cometa', 'Se crea con un cuadrado 2×2.', 'Dispara a 3 celdas (prioriza objetivos) con salpicadura.');
+    h += '<div class="glos-item" style="border:none"><svg class="glos-ic" viewBox="0 0 46 46"></svg><div class="glos-tx"><span>Para activar un power-up, intercámbialo con una gema vecina.</span></div></div>';
+    h += '</div>';
+
+    h += '<div class="glos-sec"><h3>Combinaciones (intercambia dos power-ups)</h3>';
+    h += item(svgGrid(cruzG(), A), 'Rayo + Rayo', 'Cruz: limpia una fila y una columna completas.', '');
+    h += item(svgGrid(filaG(1).concat(filaG(2),filaG(3),colG(1),colG(2),colG(3)), A), 'Rayo + Bomba', 'Banda: 3 filas y 3 columnas.', '');
+    h += item(svgGrid(areaG(2,2,2), '#fde68a'), 'Bomba + Bomba', 'Explosión enorme de 5×5.', '');
+    h += item(svgGrid([[1,1],[3,1],[2,3],[0,2],[4,2]], '#bae6fd'), 'Rayo/Bomba + Cometa', 'Varios disparos a zonas del tablero.', '');
+    h += item(svgGrid([[0,0],[4,0],[2,2],[0,4],[4,4],[3,1]], '#bae6fd'), 'Cometa + Cometa', '6 estallidos repartidos.', '');
+    h += item(svgGema({ wide: true, cols: [['#f8fafc','#cbd5e1'], PAL[3]], glyph: ['estrella','bomba'] }), 'Estrella + Rayo/Bomba', 'Convierte cada gema de un color en rayo o bomba.', '');
+    h += item(svgGrid(todoG(), '#a5f3fc'), 'Estrella + Estrella', '¡Arrasa todo el tablero!', '');
+    h += '</div>';
+
+    $('glosBody').innerHTML = h;
+  }
+  let glosListo = false;
+  function abrirGlosario() {
+    if (!glosListo) { construirGlosario(); glosListo = true; }
+    $('modalGlosario').classList.add('abierto');
+  }
+
   /* ===================== HUD ===================== */
   function actualizarHUD() {
     $('hudNivel').textContent = def.w + '·' + def.em;
@@ -1589,6 +1720,9 @@
   /* ===================== Eventos UI ===================== */
   $('btnMapaTop').addEventListener('click', irAlMapa);
   $('btnMapa2').addEventListener('click', irAlMapa);
+  $('btnGlosario').addEventListener('click', abrirGlosario);
+  $('btnGlosCerrar').addEventListener('click', () => $('modalGlosario').classList.remove('abierto'));
+  $('modalGlosario').addEventListener('click', e => { if (e.target === $('modalGlosario')) $('modalGlosario').classList.remove('abierto'); });
   $('btnMapaModal').addEventListener('click', irAlMapa);
   $('btnSiguiente').addEventListener('click', () => { $('modalFin').classList.remove('abierto'); iniciarNivel(def.n + 1); });
   $('btnReintentar').addEventListener('click', () => { $('modalFin').classList.remove('abierto'); iniciarNivel(def.n); });
