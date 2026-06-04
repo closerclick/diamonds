@@ -389,6 +389,7 @@
 <body>
 
   <div class="topbar">
+    <closer-click-back style="color:#e2e8f0;--cc-back-size:36px;margin-left:2px"></closer-click-back>
     <div class="brand">
       <img src="icon.svg" alt="" width="30" height="30">
       <span>Diamonds</span>
@@ -1934,5 +1935,37 @@
   window.addEventListener('appinstalled', () => { btnInstalar.style.display = 'none'; deferredPrompt = null; });
 </script>
   <script type="module" src="https://cdn.jsdelivr.net/npm/@closerclick/closer-click-support@0.3/src/index.js"></script>
+  <!-- Navegación "volver" unificada del ecosistema: chevron del header + botón
+       físico de Android / gesto de iOS / atrás del navegador → cierra modal,
+       vuelve del juego al mapa; si no hay nada → closer.click. -->
+  <script type="module">
+    import { createBackNav } from 'https://cdn.jsdelivr.net/npm/@closerclick/closer-click-nav@0.2/src/index.js'
+    const nav = createBackNav()
+    // Capa por modal (se abren/cierran con la clase `abierto`).
+    const bindModal = (id) => {
+      const el = document.getElementById(id); if (!el) return
+      let handle = null
+      const sync = () => {
+        const open = el.classList.contains('abierto')
+        if (open && !handle) handle = nav.open(() => el.classList.remove('abierto'))
+        else if (!open && handle) { const h = handle; handle = null; h.close() }
+      }
+      new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['class'] })
+      sync()
+    }
+    ;['modalGlosario', 'modalFin'].forEach(bindModal)
+    // Vista de juego como "página" sobre el mapa: volver regresa al mapa.
+    const vj = document.getElementById('vistaJuego')
+    if (vj) {
+      let vh = null
+      const syncV = () => {
+        const on = vj.classList.contains('activa')
+        if (on && !vh) vh = nav.open(() => document.getElementById('btnMapaTop')?.click())
+        else if (!on && vh) { const h = vh; vh = null; h.close() }
+      }
+      new MutationObserver(syncV).observe(vj, { attributes: true, attributeFilter: ['class'] })
+      syncV()
+    }
+  </script>
 </body>
 </html>
