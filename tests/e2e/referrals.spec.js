@@ -29,3 +29,34 @@ test('enlace de invitación: #i= round-trip de la pubkey', async ({ page }) => {
   expect(r.count).toBe(0)
   expect(r.bonus).toBe(0)
 })
+
+// Consumir un link de OTRO suma estrellas-bonus al que abre (dedup por contacto).
+test('consumir #i= de otro suma estrellas-bonus', async ({ page }) => {
+  await page.addInitScript(() => {
+    try { localStorage.clear() } catch {}
+    globalThis.__TEST_VAULT_PROMISE__ = Promise.resolve({
+      me: { publickey: 'PKTEST', nickname: 'tester' },
+      signData: async () => ({ signature: 'x', publickey: 'PKTEST' }),
+    })
+  })
+  // Link de OTRO usuario (PKOTHER) → al abrirlo, handleInviteHash lo consume.
+  const token = Buffer.from('PKOTHER', 'utf8').toString('base64url')
+  await page.goto('/#i=' + token)
+
+  // El consumo es local (no necesita red); poll hasta que cuente.
+  await expect.poll(async () => page.evaluate(async () => (await import('/src/referrals.js')).consumedCount()))
+    .toBe(1)
+  const bonus = await page.evaluate(async () => (await import('/src/referrals.js')).consumedBonusStars())
+  expect(bonus).toBe(1)
+  // El hash se limpió.
+  expect(await page.evaluate(() => location.hash)).toBe('')
+
+  // Reprocesar el mismo link no recuenta (dedup por contacto, misma sesión).
+  const still = await page.evaluate(async (tok) => {
+    const ref = await import('/src/referrals.js')
+    location.hash = '#i=' + tok
+    await ref.handleInviteHash()
+    return ref.consumedCount()
+  }, token)
+  expect(still).toBe(1)
+})

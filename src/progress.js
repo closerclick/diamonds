@@ -5,7 +5,7 @@
 import { PROG_KEY, reqNivel } from './config.js';
 import { S } from './state.js';
 import { loadDoc, saveDoc, PROGRESS_THREAD } from './store.js';
-import { referralBonusStars } from './referrals.js';
+import { referralBonusStars, consumedBonusStars } from './referrals.js';
 
 export function cargarProg () {
   try { const d = JSON.parse(localStorage.getItem(PROG_KEY)); if (d && d.stars) return { max: d.max || 1, stars: d.stars || {} }; } catch {}
@@ -32,10 +32,11 @@ export async function syncProgressFromStore () {
   return changed;
 }
 
-// Estrellas totales (mejores por nivel) + bonus por referidos.
+// Estrellas totales = mejores por nivel + bonus por referidos (que abren tu link)
+// + bonus por links consumidos (los que vos abriste de otros).
 export function estrellasTotales () {
   let s = 0; for (const k in S.prog.stars) s += S.prog.stars[k] || 0;
-  return s + referralBonusStars();
+  return s + referralBonusStars() + consumedBonusStars();
 }
 // Un nivel es jugable si llegó la progresión y se reúnen las estrellas.
 export function desbloqueado (n) { return n <= S.prog.max && estrellasTotales() >= reqNivel(n); }

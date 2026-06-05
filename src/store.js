@@ -56,4 +56,5 @@ export async function saveDoc (thread, doc) {
 }
 
 export const PROGRESS_THREAD = 'diamonds.progress';
-export const REFERRALS_THREAD = 'diamonds.referrals';
+export const REFERRALS_THREAD = 'diamonds.referrals';   // pubkeys que abrieron MI link (invitador)
+export const CONSUMED_THREAD = 'diamonds.consumed';     // pubkeys de links que YO abrí (consumidor)
