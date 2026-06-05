@@ -1,0 +1,22 @@
+{
+  "name": "diamonds",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Diamonds — juego casual de combinar diamantes del ecosistema CloserClick (Vite, sin framework). Mapa de mundos y niveles procedurales, diamantes duros y poderes especiales. Funciona sin conexión.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "@closerclick/closer-click-install": "0.1.1",
+    "@closerclick/closer-click-nav": "0.2.0",
+    "@closerclick/closer-click-store": "^0.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "vite": "^7.3.1"
+  }
+}

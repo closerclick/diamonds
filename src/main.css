@@ -1,0 +1,12 @@
+/* Estilos de Diamonds, modularizados por componente. Verbatim del index.html
+   vanilla original; reunidos aquí con @import (Vite los inlinea en build). */
+@import './styles/base.css';
+@import './styles/topbar.css';
+@import './styles/views.css';
+@import './styles/map.css';
+@import './styles/hud.css';
+@import './styles/board.css';
+@import './styles/combo.css';
+@import './styles/control.css';
+@import './styles/modal.css';
+@import './styles/glossary.css';

@@ -1,0 +1,27 @@
+/* --- Barra inferior --- */
+.control {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 3vw;
+  padding: 1vh 4vw;
+  padding-bottom: calc(1vh + env(safe-area-inset-bottom));
+}
+.control button {
+  flex: 1;
+  border: none;
+  border-radius: 14px;
+  background: rgba(148,163,184,.1);
+  color: #e2e8f0;
+  font-size: clamp(13px, 2vh, 17px);
+  font-weight: 700;
+  padding: 1.4vh 0;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  cursor: pointer;
+}
+.control button:active { background: rgba(148,163,184,.22); }
+.control .primary {
+  background: linear-gradient(90deg, #0891b2, #06b6d4);
+  color: #06121b;
+}
+.control .primary:active { filter: brightness(1.1); }

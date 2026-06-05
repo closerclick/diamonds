@@ -1,0 +1,34 @@
+/* --- HUD de juego --- */
+.scores {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 2vw;
+  padding: 1.2vh 3vw .3vh;
+}
+.score {
+  flex: 1;
+  text-align: center;
+  background: rgba(148,163,184,.07);
+  border: 1px solid rgba(148,163,184,.12);
+  border-radius: 14px;
+  padding: .9vh .4vh;
+  min-width: 0;
+}
+.score .lbl {
+  font-size: clamp(9px, 1.35vh, 12px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: #64748b;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.score .val {
+  font-size: clamp(18px, 3.6vh, 30px);
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: #f1f5f9;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.score.obj .val { font-size: clamp(14px, 2.6vh, 22px); }
+.score.obj .val.romper { color: #fcd34d; }

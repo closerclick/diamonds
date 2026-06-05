@@ -1,0 +1,21 @@
+/* --- Combo flotante --- */
+.combo {
+  position: fixed;
+  left: 50%; top: 44%;
+  transform: translate(-50%,-50%) scale(.6);
+  font-size: clamp(28px, 9vw, 64px);
+  font-weight: 900;
+  letter-spacing: .02em;
+  color: #fde68a;
+  text-shadow: 0 2px 18px rgba(252,211,77,.55);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 5;
+}
+.combo.show { animation: comboPop .8s ease-out; }
+@keyframes comboPop {
+  0%   { opacity: 0; transform: translate(-50%,-50%) scale(.5); }
+  25%  { opacity: 1; transform: translate(-50%,-50%) scale(1.15); }
+  70%  { opacity: 1; transform: translate(-50%,-60%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%,-80%) scale(.9); }
+}

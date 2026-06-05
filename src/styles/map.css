@@ -1,0 +1,118 @@
+/* --- Mapa de mundos (lienzo navegable con pan) --- */
+#vistaMapa { position: relative; overflow: hidden; }
+/* Viewport que captura el arrastre (pan) */
+.mapa-vp {
+  position: absolute; inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  background:
+    radial-gradient(60% 50% at 30% 10%, rgba(34,211,238,.07), transparent 70%),
+    radial-gradient(55% 45% at 80% 60%, rgba(217,180,254,.06), transparent 70%);
+}
+.mapa-vp.dragging { cursor: grabbing; }
+/* Mundo (lienzo grande que se traslada con el pan) */
+#mapaMundo {
+  position: absolute; top: 0; left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+#mapaSvg { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+/* Cabecera flotante del mundo actual */
+.mapa-hud {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 1.2vh) 4vw 1.2vh;
+  background: linear-gradient(180deg, rgba(11,18,32,.9), rgba(11,18,32,0));
+  pointer-events: none;
+}
+.mapa-hud .mh-num { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--tint, #22d3ee); }
+.mapa-hud .mh-nombre { font-size: clamp(17px, 2.6vh, 22px); font-weight: 800; color: #f1f5f9; line-height: 1.05; }
+.mapa-hud .mh-feat { font-size: clamp(10px, 1.5vh, 13px); color: #94a3b8; }
+.mapa-hud .mh-stars { margin-left: auto; font-weight: 800; color: #fcd34d; font-size: clamp(13px, 2vh, 16px); }
+
+/* Nodo de nivel posicionado en el lienzo */
+.nivel-nodo {
+  position: absolute;
+  width: 64px; height: 64px;
+  margin: -32px 0 0 -32px;            /* centrar en (x,y) */
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--tint) 65%, #fff 0%);
+  background: radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--tint) 50%, #0b1220), #0b1220);
+  color: #e2e8f0;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.45);
+  transition: transform .12s ease, box-shadow .15s ease;
+  z-index: 2;
+}
+.nivel-nodo:active { transform: scale(.92); }
+.nivel-nodo .nn { font-size: 21px; font-weight: 800; line-height: 1; }
+.nivel-nodo .ne { font-size: 10px; letter-spacing: -1px; color: #fcd34d; }
+.nivel-nodo.bloq {
+  border-color: rgba(148,163,184,.3);
+  background: rgba(148,163,184,.08);
+  color: #64748b; cursor: default; box-shadow: none;
+}
+.nivel-nodo.bloq .ne { color: #fcd34d; }
+.nivel-nodo.actual {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tint) 55%, transparent), 0 0 26px color-mix(in srgb, var(--tint) 60%, transparent);
+  animation: latePulse 1.6s ease-in-out infinite;
+}
+@keyframes latePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+/* Portal de entrada a un mundo */
+.portal {
+  position: absolute;
+  width: 92px; height: 92px;
+  margin: -46px 0 0 -46px;
+  border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 2;
+  color: #06121b; font-weight: 800; text-align: center;
+  border: 3px solid color-mix(in srgb, var(--tint) 80%, #fff);
+  background:
+    radial-gradient(circle at 50% 50%, #fff 0%, color-mix(in srgb, var(--tint) 70%, #0b1220) 45%, #0b1220 100%);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--tint) 55%, transparent);
+}
+.portal .pn { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #e2e8f0; }
+.portal .pw { font-size: clamp(12px, 1.7vh, 15px); color: #fff; }
+.portal.bloq {
+  cursor: default; color: #94a3b8;
+  border-color: rgba(252,211,77,.5);
+  background: radial-gradient(circle at 50% 50%, rgba(148,163,184,.15), #0b1220 70%);
+  box-shadow: none;
+}
+.portal .plock { font-size: 13px; font-weight: 800; color: #fcd34d; }
+
+/* Pista de "arrastra para explorar" */
+.mapa-hint {
+  position: absolute; left: 50%; bottom: calc(1.4vh + env(safe-area-inset-bottom) + 58px);
+  transform: translateX(-50%); z-index: 3;
+  font-size: clamp(11px, 1.7vh, 14px); color: #94a3b8;
+  background: rgba(11,18,32,.7); border: 1px solid rgba(148,163,184,.18);
+  padding: 6px 14px; border-radius: 50px; pointer-events: none;
+  transition: opacity .4s ease;
+}
+/* Botón "ir al nivel actual" (re-centra) */
+.mapa-recenter {
+  position: absolute; right: 4vw; bottom: calc(1.4vh + env(safe-area-inset-bottom));
+  z-index: 3;
+  border: 1px solid rgba(148,163,184,.25); background: rgba(11,18,32,.8);
+  color: #e2e8f0; font-weight: 700; font-size: clamp(12px, 1.9vh, 15px);
+  border-radius: 50px; padding: 9px 16px; cursor: pointer;
+}
+.mapa-recenter:active { background: rgba(148,163,184,.2); }
+/* Librito de guía, esquina inferior izquierda */
+.mapa-libro {
+  position: absolute; left: 4vw; bottom: calc(1.4vh + env(safe-area-inset-bottom));
+  z-index: 3;
+  display: flex; align-items: center; gap: 7px;
+  border: 1px solid rgba(252,211,77,.35); background: rgba(11,18,32,.85);
+  color: #fcd34d; font-weight: 800; font-size: clamp(13px, 2vh, 16px);
+  border-radius: 50px; padding: 9px 15px 9px 13px; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,.4);
+}
+.mapa-libro:active { background: rgba(252,211,77,.18); }
