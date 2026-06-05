@@ -20,6 +20,8 @@ import { mostrarVista, renderMapa, irAlMapa } from './ui/map.js';
 import { abrirGlosario } from './ui/glossary.js';
 import { toggleIdioma } from './ui/hud.js';
 import { iniciarNivel, entrarEndless, compartirNivel } from './levels.js';
+import { syncProgressFromStore } from './progress.js';
+import { handleInviteHash, startReferrals, onReferralsChange, inviteLink } from './referrals.js';
 
 /* ===================== Init estado ===================== */
 S.cv = $('board');
@@ -53,6 +55,24 @@ requestAnimationFrame(loop);
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
+
+/* ===================== Ecosistema: store + referidos ===================== */
+// Si abriste un enlace de invitación (#i=...), avisar al invitador (best-effort).
+handleInviteHash().catch(() => {});
+
+// Progreso durable: fusionar lo que haya en el store con lo local y re-pintar.
+syncProgressFromStore().then(ch => { if (ch && S.vista === 'mapa') renderMapa(); }).catch(() => {});
+
+// Referidos: escuchar acuses y, al cambiar el contador, re-pintar el mapa (las
+// estrellas-bonus desbloquean mundos). El enlace de invitación se enchufa al
+// share de la moneda de support una vez que hay identidad.
+onReferralsChange(() => { if (S.vista === 'mapa') renderMapa(); });
+startReferrals().catch(() => {});
+inviteLink().then(link => {
+  if (!link) return;
+  const sup = document.querySelector('closer-click-support');
+  if (sup) sup.setAttribute('share-url', link);
+}).catch(() => {});
 
 /* ===================== Navegación "volver" ===================== */
 // chevron del header + botón físico de Android / gesto iOS / atrás del navegador →

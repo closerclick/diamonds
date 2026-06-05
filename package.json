@@ -11,8 +11,11 @@
     "test": "playwright test"
   },
   "dependencies": {
+    "@closerclick/closer-click-identity": "0.9.1",
     "@closerclick/closer-click-install": "0.1.1",
     "@closerclick/closer-click-nav": "0.2.0",
+    "@closerclick/closer-click-notifications": "0.3.0",
+    "@closerclick/closer-click-proxy-client": "^0.6.0",
     "@closerclick/closer-click-store": "^0.3.0"
   },
   "devDependencies": {
